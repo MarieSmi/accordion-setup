@@ -4,10 +4,12 @@
 (навигация по приложению) — добавление страниц, подменю и их редактирование.
 Нужен для презентации, поэтому публикуется по ссылке.
 
+Создан как копия прототипа настройки интерфейса (https://github.com/MarieSmi/interface-prototype) — история до разделения общая.
+
 ## Ссылки
 
-- Демо (GitHub Pages): https://mariesmi.github.io/accordion-prototype/
-- Репозиторий (публичный): https://github.com/MarieSmi/accordion-prototype
+- Демо (GitHub Pages): https://mariesmi.github.io/accordion-setup/
+- Репозиторий (публичный): https://github.com/MarieSmi/accordion-setup
 - Шапка демо и вспомогательная панель — отдельный модуль https://github.com/MarieSmi/demo-frame (подключён с jsDelivr по тегу, `index.html`)
 
 ## Публикация
