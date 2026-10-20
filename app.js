@@ -85,7 +85,7 @@
     title: s.title, short: s.short, icon: null, head: s.submenu.headLabel ? null : s.submenu.head ?? s.title, headRight: s.submenu.headRight ?? null, showHead: true, cols: s.submenu.cols.map((c) => c.slice()),
   }]));
 
-  // Все разделы по id — и исходные, и добавленные в сценарии «Настройка аккордеона» (отмена / повтор возвращает их в список).
+  // Все разделы по id — и исходные, и добавленные «+» шапки аккордеона в «Общем демо» (отмена / повтор возвращает их в список).
   const ALL_SECTIONS = Object.fromEntries(SECTIONS.map((s) => [s.id, s]));
 
   // Виды панели (окно «Меню» → «Состояние панели»): широкий аккордеон и три вида узкого.
@@ -153,10 +153,10 @@
     // disabled — сценарий пока не сделан
     scenarios: [
       { id: 'demo', title: 'Общее демо' },
-      { group: 'Точка захода в редактор', items: [
-        { id: 'editor-inside', title: 'Админка (Inside)' },
-        { id: 'editor-account', title: 'Аккаунт' },
-        { id: 'editor-user', title: 'Пользователь', disabled: true, variants: [{ id: 'main', title: 'С главной' }, { id: 'settings', title: 'Из настроек' }] },
+      // «Редактор» — вилка: scratch — редактор без пунктов, ready — готовое «Документы»
+      { group: 'Подменю', items: [
+        { id: 'submenu-kinds', title: 'Виды подменю и пунктов' },
+        { id: 'submenu-editor', title: 'Редактор', variants: [{ id: 'scratch', title: 'С нуля' }, { id: 'ready', title: 'Готовое подменю' }] },
       ] },
       // «Добавление вкладки» пока скрыто (сценарии готовы) — вернуть: убрать hidden
       { group: 'Добавление вкладки', hidden: true, items: [
@@ -166,19 +166,10 @@
         ] },
       ] },
     ],
-    // внизу панели, над ссылками
-    bottomScenarios: [
-      // «Настройка аккордеона»: экран общего демо, интерактивен только аккордеон (с «+» шапки и редактором); «Меню» и «Логотип» — свои окна
-      { group: 'Аккордеон', items: [{ id: 'acc-setup', title: 'Настройка аккордеона' }] },
-      // «Редактор» — вилка: scratch — редактор без пунктов, ready — готовое «Документы»
-      { group: 'Подменю', items: [
-        { id: 'submenu-kinds', title: 'Виды подменю и пунктов' },
-        { id: 'submenu-editor', title: 'Редактор', variants: [{ id: 'scratch', title: 'С нуля' }, { id: 'ready', title: 'Готовое подменю' }] },
-      ] },
-    ],
     links: [
       { title: 'Макет', href: 'https://www.figma.com/proto/xMQ3ZEN4AUINgwjVoxR8hS/%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81%D0%B0-%D0%B2-%D0%BA%D0%BE%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D0%BE%D1%80%D0%B5?node-id=16219-76404&p=f&t=RLyxreNsun3BEvZg-0&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=16219%3A76404&page-id=15961%3A68013&hide-ui=1' },
-      { title: 'Настройка аккордеона', href: 'https://www.figma.com/proto/9eLwMJLQCwT0xHKviN2j1P/%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%B0%D0%BA%D0%BA%D0%BE%D1%80%D0%B4%D0%B5%D0%BE%D0%BD%D0%B0-%D0%B2-%D0%BA%D0%BE%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D0%BE%D1%80%D0%B5?node-id=15961-69245&t=s00ww53K0w0788Dp-0&scaling=min-zoom&content-scaling=fixed&starting-point-node-id=15961%3A69245&page-id=15961%3A68013&hide-ui=1' },
+      // демо прототипа настройки интерфейса (github.com/MarieSmi/interface-prototype)
+      { title: 'Настройка интерфейса', href: 'https://mariesmi.github.io/interface-prototype/' },
     ],
     team: [
       { label: 'Design', name: 'Смирнова Мария', links: [
@@ -207,9 +198,9 @@
       closeTabsWin();
       selectTabs(false);
       resetTabs(scenario.startsWith('tab-'));
-      removeAddedSections(); // пункты, добавленные в «Настройке аккордеона», живут только в этом сценарии
+      removeAddedSections(); // пункты, добавленные «+» шапки аккордеона, живут только в своём сценарии
       resetHistory(); // смена сценария — не правка: история начинается заново
-      setInside(scenario);
+      smeConfirm.hidden = true;
       setEditorOnly();
     },
   });
@@ -267,7 +258,6 @@
 
   function renderAccordion() {
     list.innerHTML = '';
-    stage.classList.toggle('items-added', SECTIONS.some((s) => s.added)); // пин на «+» аккордеона — до первого добавленного пункта
     for (const sec of SECTIONS) {
       const li = el('li', 'acc-item' + (sec.pinned ? ' is-pinned' : ''));
       li.dataset.id = sec.id;
@@ -1125,13 +1115,13 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !rpMoreMenu.hidden) closeRpMore(); });
 
   // ---------- Меню «⋮» пункта аккордеона (Figma xMQ3ZEN4AUINgwjVoxR8hS 19401:31603) ----------
-  // В «Общем демо» и «Аккордеон → Настройка аккордеона». Крестик меню — ровно поверх «⋮» (крестик: right −14, top 8, 28×28).
+  // В «Общем демо». Крестик меню — ровно поверх «⋮» (крестик: right −14, top 8, 28×28).
   // «Настроить подменю» — редактор подменю; «Переименовать» — каретка в названии на месте; «Переместить» — только ховер
   // (подменю «Вверх / Вниз / В другой раздел» без действий); «Удалить» — пункт уходит (отмена в шапке возвращает).
   // У второй строки (выбранный пункт подменю) то же меню, действия — с этим пунктом подменю.
   const accMore = $('#accMore');
   let am = null; // { id, sub, li }
-  const accMoreOn = () => ['demo', 'acc-setup'].includes(stage.dataset.scenario);
+  const accMoreOn = () => stage.dataset.scenario === 'demo';
   function toggleAccMore(id, cmd, sub) {
     if (am && am.id === id && am.sub === sub) { closeAccMore(); return; }
     closeAccMore();
@@ -1339,7 +1329,7 @@
       tb.append(b);
       return b;
     };
-    // ⚙ — окно настроек пункта (в «Настройке аккордеона» и «Подменю → Редактор»; в остальных сценариях — наведение)
+    // ⚙ — окно настроек пункта (в «Общем демо» и «Подменю → Редактор»; в остальных сценариях — наведение)
     const gear = btn('sme-tb__btn--gear' + (iw && iw.key === ed.selected ? ' is-active' : ''), '', 'Настройки');
     // у выделенной пустой колонки («col:N») ⚙ — пока только наведение
     if (itemSettingsOn() && !ed.selected.startsWith('col:')) gear.addEventListener('click', () => (iw && iw.key === ed.selected ? closeItemWin() : openItemWin(ed.selected)));
@@ -1409,7 +1399,7 @@
     smeIcon.innerHTML = editorIconHTML(ed.sec, draft.icon);
     smeCard.innerHTML = '';
     smeCard.classList.toggle('is-multi', draft.cols.length > 1);
-    // правки реестра (двухколоночный, плюсы с меню «+», ховер только у виджета) — только в «Аккордеоне и подменю»
+    // правки реестра (двухколоночный, плюсы с меню «+», ховер только у виджета) — там же, где окно настроек пункта
     const registry = itemSettingsOn();
     smeCard.classList.toggle('is-registry', registry);
     // в реестре плюсы сверху и снизу выделенного виджета открывают меню «+», выбранная страница встаёт на место плюса
@@ -1422,7 +1412,7 @@
       const w = el('div', 'sme-w' + (sub ? ' sme-w--sub' : '') + (key === selected ? ' is-selected' : ''));
       w.dataset.key = key;
       w.append(el('span', 'sme-w__text', title), mk('top', ci, ii), mk('bottom', ci, key === 'head' ? 0 : ii + 1));
-      // в «Настройке аккордеона» у виджета виден элемент справа из окна настроек
+      // где есть окно настроек пункта, у виджета виден элемент справа из него
       if (itemSettingsOn() && right) $('.sme-w__text', w).insertAdjacentHTML('afterend', rightHTML(right));
       if (key === selected) w.append(toolbar());
       return w;
@@ -1656,9 +1646,8 @@
   });
   smeConfirm.addEventListener('click', (e) => {
     const answer = e.target.closest('[data-answer]')?.dataset.answer;
-    // Это же подтверждение спрашивает и окно «Вкладки», и ✕ шапки конструктора в сценарии «Админка».
+    // Это же подтверждение спрашивает и окно «Вкладки».
     if (tw) { answerTabsConfirm(answer); return; }
-    if (insideAsk) { answerInsideConfirm(answer); return; }
     if (ae) { answerAeConfirm(answer); return; }
     if (answer === 'yes') saveEditor();
     else if (answer === 'no') closeEditor();
@@ -2235,7 +2224,7 @@
     const match = (t) => !q || t.toLowerCase().includes(q);
     const fromAcc = accEditor.contains(plusOwner); // плюс у пункта в редакторе аккордеона
     const fromEditor = plusOwner !== accPlus && !fromAcc;
-    // В «Настройке аккордеона» и «Подменю → Редактор» уже добавленной страницы в меню нет: в редакторе — пунктов
+    // Где добавляются пункты и есть окно настроек пункта, уже добавленной страницы в меню нет: в редакторе — пунктов
     // и заголовка подменю, в «+» шапки аккордеона — добавленных пунктов аккордеона.
     const used = new Set(fromAcc ? ae.draft.map((it) => it.title) : fromEditor
       ? (itemSettingsOn() ? [ed.draft.showHead ? ed.draft.head : null, ...ed.draft.cols.flat().map((it) => it.title)] : [])
@@ -2262,7 +2251,7 @@
       // В меню «+» шапки аккордеона не кликаются страницы и пустые группы («Деньги», «Торги»).
       row('', `<span class="ico pm-ico">${arrow}</span><span>${n.title}</span>`,
         n.kind === 'group' && (fromEditor || fromAcc || n.items.length) ? () => { n.open = !n.open; renderPlusMenu(); } : null);
-      // В «Настройке аккордеона» страница «Моей компании» из «+» шапки аккордеона добавляет пункт в аккордеон.
+      // В «Общем демо» страница «Моей компании» из «+» шапки аккордеона добавляет пункт в аккордеон.
       const onPage = (t) => (fromAcc ? () => aeAddPage(t) : fromEditor ? () => addPage(t) : accAddItems() && n.title === 'Моей компании' ? () => addAccItem(t) : null);
       if (n.open || (q && kids.length)) for (const t of (q ? kids : pages(n))) row('pm-row--page', `<span>${t}</span>`, onPage(t));
     }
@@ -2292,9 +2281,9 @@
     commit(draft);
   }
 
-  // Сценарий «Аккордеон → Настройка аккордеона»: страница из меню «+» шапки аккордеона становится пунктом в конце аккордеона
+  // «Общее демо»: страница из меню «+» шапки аккордеона становится пунктом в конце аккордеона
   // и открывается её страница (скелетон). Пустого подменю нет: в нём сразу заголовок — название пункта. Редактор подменю — по ✎ пункта, как у остальных разделов.
-  const accAddItems = () => stage.dataset.scenario === 'acc-setup';
+  const accAddItems = () => stage.dataset.scenario === 'demo';
   const ADDED_ICON = ICON_GROUPS[0].icons[0]; // иконка нового пункта — первая из выбора иконок (меняется в редакторе)
   let addedCount = 0;
   function addAccItem(title) {
@@ -2318,7 +2307,7 @@
     renderAccordion();
   }
 
-  // ---------- Редактор аккордеона («Аккордеон → Настройка аккордеона») ----------
+  // ---------- Редактор аккордеона (вход — кнопка «Настроить» внизу аккордеона, пока скрыта) ----------
   // Кнопка-ссылка «Настроить» внизу аккордеона (в узком — карандаш, разворачивает аккордеон) открывает окно поверх аккордеона — как редактор подменю:
   // птичка в шапке окна встаёт на птичку аккордеона. В шапке окна — виджет шапки (птичка и saby): не удаляется,
   // ховер как в аккордеоне, клик — окно «Логотип». В карточке — аккордеон в его цветах: «ПРЕДПРИЯТИЕ» — статика,
@@ -2687,7 +2676,7 @@
   });
 
   // ---------- Окно настроек пункта подменю (Figma 9eLwMJLQCwT0xHKviN2j1P 18562:24378) ----------
-  // По ⚙ тулбара выделенного виджета, в «Настройке аккордеона» и «Подменю → Редактор». Встаёт справа от виджета (как «Вкладки»),
+  // По ⚙ тулбара выделенного виджета, в «Общем демо» и «Подменю → Редактор». Встаёт справа от виджета (как «Вкладки»),
   // перетаскивается за шапку. Правки сразу видны на виджете: ✓ — одним шагом в черновик редактора, ✕ — без изменений,
   // ↺ — к виду на момент открытия. У заголовка подменю нет «Вложенности» и «Закрепить», зато есть «Размещение» плюса.
   const itemWin = $('#itemWin');
@@ -2697,8 +2686,8 @@
   const IW_CMDS = [['none', 'Не выбрано'], ['count', 'Счетчик'], ['panel', 'Открытие панели'], ['add', 'Добавление']];
   const IW_SHOWS = [['both', 'Новые и общие события'], ['new', 'Только новые события'], ['total', 'Общее количество событий']];
   const IW_DEMO = { accent: '3', count: '12' }; // демо-цифры счётчика, если своих у пункта нет
-  // окно — в «Настройке аккордеона» и в «Подменю → Редактор»
-  function itemSettingsOn() { return ['acc-setup', 'submenu-editor'].includes(stage.dataset.scenario); }
+  // окно — в «Общем демо» и в «Подменю → Редактор»
+  function itemSettingsOn() { return ['demo', 'submenu-editor'].includes(stage.dataset.scenario); }
 
   // Элемент справа пункта ⇄ настройки окна
   function iwFromRight(r) {
@@ -3135,8 +3124,11 @@
   function pvStyle(t, e = effColors(t, {})) {
     const v = { ...themeVars(t, e) };
     const p = e.pv ?? t.pv;
+    // фон-картинка: под страницей забеление 70%, как на сцене; аккордеон без цвета или белый 70% лежит на том же забелении
+    const img = /^url\(/.test(e.pvBg ?? '');
+    const veilAcc = img && (v['--acc-bg'] === 'transparent' || v['--acc-bg'] === 'rgba(255, 255, 255, 0.7)');
     const pv = {
-      bg: e.pvBg ?? v['--content-bg'], acc: v['--acc-bg'], sel: p.sel ?? v['--acc-item-selected'] ?? '#273748',
+      bg: e.pvBg ?? v['--content-bg'], veil: img ? 'rgba(255, 255, 255, .7)' : 'transparent', acc: veilAcc ? 'transparent' : v['--acc-bg'], sel: p.sel ?? v['--acc-item-selected'] ?? '#273748',
       bird: v['--acc-bird'] ?? e.marker, 'bird-bg': v['--acc-bird-bg'] ?? 'transparent',
       title: p.title, line: p.line, icon: p.icon, 'icon-sel': p.iconSel, marker: e.marker, accent2: e.accent2,
       card: p.card ?? '#fff', box: p.box ?? '#f4f4f4', top: p.top ?? '#fff',
@@ -3147,7 +3139,7 @@
   // Превью 306×181: аккордеон (птичка, название, пункт, выбранный пункт с маркером) и страница (вкладка, карточка).
   function pvHTML(t, e) {
     return `<span class="tpv" style="${pvStyle(t, e)}">` +
-      '<i class="tpv__acc"></i><i class="tpv__bird">&#xE9E2;</i><i class="tpv__title"></i>' +
+      '<i class="tpv__veil"></i><i class="tpv__acc"></i><i class="tpv__bird">&#xE9E2;</i><i class="tpv__title"></i>' +
       '<i class="tpv__dot" style="top:46px"></i><i class="tpv__line" style="top:54px;width:60px"></i>' +
       '<i class="tpv__sel"></i><i class="tpv__mark"></i><i class="tpv__dot" style="top:79px;background:var(--pv-icon-sel)"></i>' +
       '<i class="tpv__line" style="top:87px;width:34px"></i><i class="tpv__line tpv__a2" style="top:87px;left:84px;width:10px"></i><i class="tpv__line tpv__a1" style="top:87px;left:98px;width:10px"></i>' +
@@ -3415,8 +3407,12 @@
     sw.className = 'swatch' + (img ? ' is-img' : b.kind === 'color' && b.a < 100 ? ' is-alpha' : '');
     sw.style.setProperty('--c', img ? `url(${BG_IMGS[b.i]})` : custom.bg ? bgPreview(b) : t.bg ?? DEFAULT_BG);
     stage.classList.toggle('is-bg-img', img);
-    // аккордеон белый 70%, как задаёт картинка (не перекрашен), — его забеление входит в общий слой под контентом (styles.css)
-    stage.classList.toggle('is-acc-veil', img && custom.acc?.hex === '#ffffff' && custom.acc.a === 70);
+    // аккордеон белый 70%, как задаёт картинка (не перекрашен), — его забеление входит в общий слой под контентом (styles.css).
+    // Аккордеон без цвета лежит на том же забелении, что и контент: картинка под ним тоже под белым 70%.
+    const acc = custom.acc ?? baseColor(t.acc);
+    const clear = !acc.hex || acc.a === 0;
+    stage.classList.toggle('is-acc-veil', img && (clear || (acc.hex === '#ffffff' && acc.a === 70)));
+    stage.classList.toggle('is-acc-clear', img && clear);
     if (!img) { for (const p of ['--bg-img', '--bg-op', '--bg-filter', '--bg-tint']) stage.style.removeProperty(p); return; }
     const f = b.fx;
     // температура: тёплый или холодный оттенок поверх картинки (soft-light)
@@ -3635,7 +3631,7 @@
     if (!s.tabsAdded) selectTabs(false);
     renderTabs();
     // разделы; открытый пункт подменю, которого больше нет, снимается
-    // список разделов — по снимку (добавленные в «Настройке аккордеона» уходят и возвращаются)
+    // список разделов — по снимку (добавленные «+» шапки аккордеона уходят и возвращаются)
     SECTIONS.splice(0, SECTIONS.length, ...s.sections.map((d) => ALL_SECTIONS[d.id]));
     if (state.page.section && !SECTIONS.some((x) => x.id === state.page.section)) { state.page = { section: null, item: null }; updatePage(); }
     SECTIONS.forEach((sec, i) => {
@@ -3664,63 +3660,6 @@
   for (const type of ['click', 'pointerup', 'focusout']) document.addEventListener(type, later, true);
   document.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Delete') later(); }, true);
   document.addEventListener('input', () => { clearTimeout(inputTimer); inputTimer = setTimeout(record, INPUT_PAUSE); }, true);
-
-  // ---------- Точка захода в редактор: «Админка (Inside)» и «Аккаунт» ----------
-  // Экран приложения (Figma xMQ3ZEN4AUINgwjVoxR8hS: админка 18428:12935, аккаунт 18637:73187) поверх конструктора.
-  // Превью на обоих экранах красится токенами темы со сцены; логотип и надпись — как в аккордеоне.
-  // Клик по превью админки или «Настроить» аккаунта открывает конструктор (редактор), ✓ шапки — сохранить и вернуться, ✕ — вернуться; если были правки,
-  // сначала «Сохранить изменения?»: «Да» — как ✓, «Нет» — откатить правки этого захода, «Отмена» — остаться в редакторе.
-  const ENTRIES = { 'editor-inside': $('#inside'), 'editor-account': $('#account') };
-  let entry = null;      // экран текущего сценария захода в редактор; null — другой сценарий
-  let insideSnap = null; // снимок при входе в редактор с экрана; null — редактор открыт не с экрана
-  let insideAsk = false; // подтверждение открыто ✕ шапки в сценарии захода
-
-  function showInside() {
-    closeOtherWindows();
-    closeSubmenu();
-    for (const b of entry.querySelectorAll('.ipv__bird')) b.innerHTML = logoHTML();
-    for (const l of entry.querySelectorAll('.ipv__logo')) l.innerHTML = $('#goHome').innerHTML;
-    insideSnap = null;
-    entry.hidden = false;
-  }
-  function setInside(scenario) {
-    insideAsk = false;
-    smeConfirm.hidden = true;
-    for (const sec of Object.values(ENTRIES)) sec.hidden = true;
-    insideSnap = null;
-    entry = ENTRIES[scenario] ?? null;
-    if (entry) showInside();
-  }
-  function answerInsideConfirm(answer) {
-    smeConfirm.hidden = true;
-    insideAsk = false;
-    if (answer === 'cancel') return;
-    if (answer === 'no') restore(insideSnap);
-    resetHistory();
-    showInside();
-  }
-
-  for (const sec of Object.values(ENTRIES)) {
-    sec.querySelector('.ins-pv, .ins-setup').addEventListener('click', () => {
-      sec.hidden = true;
-      resetHistory(); // отмена в редакторе — только в пределах этого захода
-      insideSnap = snapshot();
-    });
-  }
-  $('.ctor-header .done-btn').addEventListener('click', () => {
-    if (insideSnap === null) return;
-    record();
-    resetHistory();
-    showInside();
-  });
-  $('.ctor-header .close-btn').addEventListener('click', () => {
-    if (insideSnap === null) return;
-    record();
-    if (snapshot() === insideSnap) { resetHistory(); showInside(); return; }
-    closeOtherWindows();
-    insideAsk = true;
-    smeConfirm.hidden = false;
-  });
 
   applyTheme(themeId);
   renderAccordion();

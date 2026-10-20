@@ -70,7 +70,7 @@
           <div class="acc-header__row" data-tip="На главную">
             <button class="acc-bird" type="button" aria-label="Логотип" data-tip=""><span class="ico24">&#xE9E2;</span></button>
             <button class="acc-logo" type="button" id="goHome" aria-label="saby"><svg class="acc-logo__svg" width="48.2" height="23.82" viewBox="0 0 48.2 23.82" aria-hidden="true"><path fill="currentColor" d="M0.720 14.200C1.040 16.580 3.260 18.120 6.360 18.120C9.300 18.120 11.220 16.880 11.220 15C11.220 13.120 9.900 12.260 6.160 11.700C3.460 11.300 2.700 10.920 2.700 9.960C2.700 8.980 3.880 8.320 5.620 8.320C7.440 8.320 8.800 9.220 9.200 10.660L10.720 10.360C10.360 8.400 8.160 6.920 5.620 6.920C2.920 6.920 1.120 8.180 1.120 10.020C1.120 11.780 2.360 12.600 6.120 13.120C8.680 13.460 9.620 13.980 9.620 15.020C9.620 16.080 8.380 16.720 6.360 16.720C3.980 16.720 2.580 15.720 2.240 13.860L0.720 14.200ZM12.860 14.980C12.860 16.920 14.320 18.120 16.780 18.120C18.460 18.120 20 17.460 20.720 16.480L20.760 16.480L20.760 17.820L22.340 17.820L22.340 10.380C22.340 8.280 20.620 6.920 17.920 6.920C16.580 6.920 15.460 7.260 14.560 7.920C13.660 8.580 13.120 9.460 12.920 10.560L14.500 10.900C14.820 9.300 16.080 8.360 17.920 8.360C19.540 8.360 20.580 9.020 20.580 10.040C20.580 10.860 19.800 11.280 17.540 11.660C14.160 12.200 12.860 13.120 12.860 14.980ZM20.700 14.120C20.700 15.460 19 16.660 17.120 16.660C15.360 16.660 14.520 16.120 14.520 14.980C14.520 13.940 15.460 13.380 17.840 12.980C19.600 12.680 20.360 12.380 20.660 11.840L20.700 11.840ZM26.480 16.500C27.340 17.520 28.800 18.120 30.460 18.120C33.760 18.120 36.140 15.800 36.140 12.520C36.140 9.340 33.740 6.920 30.560 6.920C28.900 6.920 27.420 7.520 26.540 8.560L26.500 8.560L26.500 3.220L24.860 3.220L24.860 17.820L26.440 17.820L26.440 16.500ZM34.500 12.520C34.500 15.060 32.900 16.680 30.360 16.680C28.200 16.680 26.500 15.180 26.500 13.320L26.500 11.720C26.500 9.860 28.220 8.360 30.460 8.360C32.880 8.360 34.500 10 34.500 12.520ZM38.600 22.320L40.460 22.320L48.000 7.220L46.120 7.220L42.260 15.180L42.220 15.180L38.340 7.220L36.460 7.220L41.320 16.900Z"/></svg></button>
-            <button class="acc-plus" type="button" aria-label="Добавить раздел" data-tip=""><span class="ico">&#xEB25;</span><span class="click-pin" aria-hidden="true"><img src="assets/img/click-cursor.svg" width="16" height="16" alt=""></span></button>
+            <button class="acc-plus" type="button" aria-label="Добавить раздел" data-tip=""><span class="ico">&#xEB25;</span></button>
           </div>
           <div class="acc-group">
             <button class="acc-burger" type="button" id="accBurger" aria-label="Свернуть меню"><span class="acc-icon16">&#xE91F;</span></button>
@@ -78,9 +78,9 @@
           </div>
         </div>
         <ul class="acc-list" id="accList"></ul>
-        <!-- «Настройка аккордеона»: вход в редактор аккордеона — кнопка-ссылка «Настроить» внизу по центру
+        <!-- Вход в редактор аккордеона — кнопка-ссылка «Настроить» внизу по центру
              (Figma nuC4KFMiS36uDWDUp9wKGl 17890:7577, ховер 17890:7593); в узком — только карандаш -->
-        <button class="acc-setup" type="button" id="accGear"><span class="ico">&#xE660;</span><span class="acc-setup__text">Настроить</span><span class="click-pin" aria-hidden="true"><img src="assets/img/click-cursor.svg" width="16" height="16" alt=""></span></button>
+        <button class="acc-setup" type="button" id="accGear"><span class="ico">&#xE660;</span><span class="acc-setup__text">Настроить</span></button>
       </nav>
 
       <!-- Контент: середина свёрстана (Figma 16106:372823, скелетон 18711:38376), информеры и ЦУ — скриншот -->
@@ -733,7 +733,7 @@
         <div class="sme-card" id="smeCard"></div>
       </section>
 
-      <!-- Редактор аккордеона («Настройка аккордеона»): как редактор подменю, ширина 300; в шапке слева (Figma 18581:22935) «+»
+      <!-- Редактор аккордеона (вход — «Настроить» внизу аккордеона, пока скрыт): как редактор подменю, ширина 300; в шапке слева (Figma 18581:22935) «+»
            (страница — пунктом в конец) и валик (окно цвета аккордеона — как первый кружок «Темы»).
            Под шапкой — аккордеон во всю высоту в его цветах: строка шапки (птичка и saby, клик — окно «Логотип»), группа, пункты-виджеты -->
       <section class="sm-editor acc-editor" id="accEditor" hidden aria-label="Редактор аккордеона">
@@ -804,7 +804,7 @@
       </section>
 
       <!-- Окно настроек пункта подменю (Figma 9eLwMJLQCwT0xHKviN2j1P 18562:24378): по ⚙ тулбара виджета редактора,
-           в «Настройке аккордеона» и «Подменю → Редактор». Встаёт справа от виджета, как «Вкладки» от виджета вкладок.
+           в «Общем демо» и «Подменю → Редактор». Встаёт справа от виджета, как «Вкладки» от виджета вкладок.
            Оно же — настройки пункта аккордеона в его редакторе (Figma 18585:28421): иконка у названия, «Наполнение пункта», «Закрепить пункт снизу» -->
       <section class="set-win item-win" id="itemWin" hidden aria-label="Настройка пункта">
         <div class="set-win__head">
@@ -1050,104 +1050,6 @@
         </div>
       </div>
 
-      <!-- Сценарий «Админка (Inside)» (Figma xMQ3ZEN4AUINgwjVoxR8hS 18428:12935): экран 1600×843 поверх конструктора.
-           Весь экран — картинка, живое только превью настроенного интерфейса (цвета и фон — токены темы со сцены):
-           по наведению — затенение и «Настроить ›» (Figma 18431:19444), клик открывает конструктор. -->
-      <section class="ins" id="inside" hidden aria-label="Админка">
-        <div class="ins__screen">
-          <img class="ins__bg" src="assets/img/inside/screen.png" width="1600" height="843" alt="">
-          <button class="ins-pv" type="button" aria-label="Настроить">
-            <div class="ipv">
-              <div class="ipv__acc">
-                <div class="ipv__head"><span class="ipv__bird"></span><span class="ipv__logo"></span></div>
-                <div class="ipv__item"><i></i><b></b></div>
-                <div class="ipv__item is-sel"><i></i><b></b></div>
-                <div class="ipv__item"><i></i><b></b></div>
-                <div class="ipv__item"><i></i><b></b></div>
-                <div class="ipv__item"><i></i><b></b></div>
-              </div>
-              <div class="ipv__dash">
-                <div class="ipv__page">
-                  <div class="ipv__row1"><i class="ipv__a1"></i><i class="ipv__search"></i></div>
-                  <div class="ipv__tabs"><span class="ipv__tab"><i></i><i class="ipv__dot"></i></span><span class="ipv__tab"><i></i></span><span class="ipv__tab ipv__tab--on"><i></i><i class="ipv__under"></i></span></div>
-                  <div class="ipv__card">
-                    <div class="ipv__line"><i class="ipv__sq"></i><span><span><i style="width:24.466px"></i><i style="width:17.192px"></i></span><i style="width:95.218px"></i><i style="width:57.528px"></i></span></div>
-                    <i class="ipv__sep"></i>
-                    <div class="ipv__line"><i class="ipv__sq"></i><span><span><i style="width:24.466px"></i><i style="width:17.192px"></i></span><i style="width:95.218px"></i><i style="width:57.528px"></i></span></div>
-                    <i class="ipv__sep"></i>
-                    <div class="ipv__line"><i class="ipv__sq"></i><span><span><i style="width:24.466px"></i><i style="width:17.192px"></i></span><i style="width:95.218px"></i><i style="width:57.528px"></i></span></div>
-                  </div>
-                </div>
-                <div class="ipv__rp"><span><i></i><i></i></span><span><i class="ipv__shop"></i><i></i><i></i><i class="ipv__lav"></i></span></div>
-              </div>
-              <div class="ipv__cu">
-                <div class="ipv__note"><i class="ipv__cap"></i><i class="ipv__blk"></i></div>
-                <div class="ipv__note"><i class="ipv__cap"></i><span class="ipv__sqs"><i></i><i></i><i></i></span></div>
-                <div class="ipv__note"><i class="ipv__cap"></i><i class="ipv__blk"></i></div>
-                <div class="ipv__note ipv__note--news"><i class="ipv__pic"></i><span><i></i><i></i><i class="ipv__end"></i></span></div>
-              </div>
-            </div>
-            <span class="ins-pv__hover"><span class="ins-pv__btn">Настроить<span class="ico">&#xE9AB;</span></span></span>
-          </button>
-        </div>
-      </section>
-
-      <!-- Сценарий «Аккаунт» (Figma xMQ3ZEN4AUINgwjVoxR8hS 18637:73187): экран 1600×843 — картинка, середина (превью 620×350,
-           текст, «Настроить», карточки) живая — превью красится токенами темы, как в админке -->
-      <section class="ins" id="account" hidden aria-label="Аккаунт">
-        <div class="ins__screen">
-          <img class="ins__bg ins__bg--acc" src="assets/img/account/bg.png" width="1600" height="843" alt="">
-          <div class="ins-main ins-main--acc">
-            <div class="ins-top">
-              <!-- Превью 470×250 (Figma 18659:78067): аккордеон, страница, ЦУ -->
-              <div class="ipv">
-                <div class="ipv__acc">
-                  <div class="ipv__head"><span class="ipv__bird"></span><span class="ipv__logo"></span></div>
-                  <div class="ipv__item"><i></i><b></b></div>
-                  <div class="ipv__item is-sel"><i></i><b></b></div>
-                  <div class="ipv__item"><i></i><b></b></div>
-                  <div class="ipv__item"><i></i><b></b></div>
-                  <div class="ipv__item"><i></i><b></b></div>
-                </div>
-                <div class="ipv__dash">
-                  <div class="ipv__page">
-                    <div class="ipv__row1"><i class="ipv__a1"></i><i class="ipv__search"></i></div>
-                    <div class="ipv__tabs"><span class="ipv__tab"><i></i><i class="ipv__dot"></i></span><span class="ipv__tab"><i></i></span><span class="ipv__tab ipv__tab--on"><i></i><i class="ipv__under"></i></span></div>
-                    <div class="ipv__card">
-                      <div class="ipv__line"><i class="ipv__sq"></i><span><span><i style="width:24.466px"></i><i style="width:17.192px"></i></span><i style="width:95.218px"></i><i style="width:57.528px"></i></span></div>
-                      <i class="ipv__sep"></i>
-                      <div class="ipv__line"><i class="ipv__sq"></i><span><span><i style="width:24.466px"></i><i style="width:17.192px"></i></span><i style="width:95.218px"></i><i style="width:57.528px"></i></span></div>
-                      <i class="ipv__sep"></i>
-                      <div class="ipv__line"><i class="ipv__sq"></i><span><span><i style="width:24.466px"></i><i style="width:17.192px"></i></span><i style="width:95.218px"></i><i style="width:57.528px"></i></span></div>
-                    </div>
-                  </div>
-                  <div class="ipv__rp"><span><i></i><i></i></span><span><i class="ipv__shop"></i><i></i><i></i><i class="ipv__lav"></i></span></div>
-                </div>
-                <div class="ipv__cu">
-                  <div class="ipv__note"><i class="ipv__cap"></i><i class="ipv__blk"></i></div>
-                  <div class="ipv__note"><i class="ipv__cap"></i><span class="ipv__sqs"><i></i><i></i><i></i></span></div>
-                  <div class="ipv__note"><i class="ipv__cap"></i><i class="ipv__blk"></i></div>
-                  <div class="ipv__note ipv__note--news"><i class="ipv__pic"></i><span><i></i><i></i><i class="ipv__end"></i></span></div>
-                </div>
-              </div>
-              <div class="ins-intro">
-                <div class="ins-intro__text">
-                  <p class="ins-intro__title">Настройте интерфейс Saby</p>
-                  <p class="ins-intro__sub">Выберите готовую тему или настройте внешний вид и расположение элементов интерфейса под свои задачи.</p>
-                </div>
-                <button class="ins-setup" type="button">Настроить<span class="ico">&#xE9AB;</span></button>
-              </div>
-            </div>
-            <div class="ins-info">
-              <div class="ins-info__item"><span class="ins-info__ico">&#xEBBB;</span><p class="ins-info__title">Оформление</p><p class="ins-info__sub">Настройте логотип, тему и фон приложения</p></div>
-              <i class="ins-info__sep"></i>
-              <div class="ins-info__item"><span class="ins-info__ico">&#xEBBA;</span><p class="ins-info__title">Компоновка</p><p class="ins-info__sub">Настройте меню, центр уведомлений и расположение страницы</p></div>
-              <i class="ins-info__sep"></i>
-              <div class="ins-info__item"><span class="ins-info__ico">&#xEBA0;</span><p class="ins-info__title">Язык</p><p class="ins-info__sub">Выберите язык интерфейса</p></div>
-            </div>
-          </div>
-        </div>
-      </section>
       <!-- Сценарий «Виды подменю и пунктов»: статичные подменю (Контакты, Бизнес, Календарь) и справа колонкой — отличающиеся пункты
            подменю (заголовки, уровни, элементы справа) на фоне конструктора, только ховеры; наполняет app.js -->
       <section class="kinds" id="submenuKinds" aria-label="Виды подменю и пунктов"></section>

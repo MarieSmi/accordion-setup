@@ -298,9 +298,8 @@ ul { list-style: none; margin: 0; padding: 0; }
 .acc-item.is-sub-hover .acc-item__btn .acc-cmds,
 .acc-item:not(.is-sub-hover) .acc-item__sub .acc-cmds { opacity: 0; pointer-events: none; }
 .acc-item__short { display: none; }
-/* в аккордеоне у пунктов счётчиков и команд ✎ ⋮ нет (в редакторе аккордеона — остаются) */
-.accordion .acc-item__count,
-.accordion .acc-cmds { display: none; }
+/* в аккордеоне у пунктов счётчиков нет (в редакторе аккордеона — остаются) */
+.accordion .acc-item__count { display: none; }
 
 /* ---------- Узкий аккордеон (56px) ---------- */
 .accordion.is-narrow { z-index: 5; }
@@ -705,13 +704,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 .click-pin::before { content: ""; position: absolute; inset: 0; border-radius: 32px; background: #6cc; opacity: .5; }
 .click-pin img { position: absolute; left: 26px; top: 26px; }
 .stage[data-scenario^="tab-"]:not(.tabs-added) .rp-btn[data-rp="shop"]:not(.is-active) .click-pin { display: block; }
-/* «Настройка аккордеона»: пин на «+» шапки аккордеона — пока пункт не добавлен и меню «+» не открыто */
 .acc-plus { position: relative; }
-.stage[data-scenario="acc-setup"]:not(.items-added) .acc-plus:not(.is-active) .click-pin { display: block; }
-/* «Настройка аккордеона»: пин на «Настроить», пока редактор не открыт */
-.acc-setup { position: relative; }
-.stage[data-scenario="acc-setup"] .acc-setup:not(.is-active) .click-pin { display: block; }
-.acc-setup .click-pin { left: 100%; } /* центр пина — в конце слова */
 /* Точка-подсказка (Figma 18348:17461, clickDot 6×6) у элементов добавления вкладки в сценариях «Добавление вкладки»:
    плюс в колонке информеров и ссылка «+вкладка» — справа вверху. Пока вкладка не добавлена и меню не открыто. */
 #infPlus, #dashAddTab { position: relative; }
@@ -998,14 +991,10 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .stage[data-scenario="submenu-editor"] :is(.icon-pick, .item-win) { z-index: 47; }
 .stage[data-scenario="submenu-editor"] :is(.plus-menu, .iw-menu) { z-index: 48; } /* меню — поверх окна настроек пункта */
 .stage[data-scenario="submenu-editor"] .confirm-layer { z-index: 48; }
-/* «Настройка аккордеона»: живые только аккордеон, «Меню» и «Логотип» (с их окнами); остальное — статика без ховеров */
-.stage[data-scenario="acc-setup"] :is(.ctor-header, .content, .right-panel) { pointer-events: none; }
-.stage[data-scenario="acc-setup"] :is(#menuBtn, #logoBtn) { pointer-events: auto; }
-/* «Настроить» — кнопка-ссылка label внизу аккордеона по центру, 8 от низа; только в этом сценарии.
+/* «Настроить» — кнопка-ссылка label внизу аккордеона по центру, 8 от низа; пока скрыта (была в убранном сценарии «Настройка аккордеона»).
    Иконка 16 и отступ 4, текст 14; цвет — из макета: label #8991a9; по наведению цвет не меняется, текст подчёркивается.
    В узком аккордеоне — только карандаш */
 .acc-setup { display: none; margin: auto auto 8px; height: 24px; align-items: center; gap: 4px; color: #8991a9; }
-.stage[data-scenario="acc-setup"] .acc-setup { display: flex; }
 .acc-setup .ico { color: inherit; padding-bottom: 1px; }
 .acc-setup__text { padding-bottom: 1px; font-size: 14px; letter-spacing: -.1974px; }
 .acc-setup:hover .acc-setup__text { text-decoration: underline; }
@@ -1227,7 +1216,8 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
   position: relative; display: flex; flex-direction: column; flex: 1 0 auto; min-width: 210px; min-height: 53px; padding: 6px;
   border: 1px dashed transparent; border-radius: 8px;
 }
-.sme-card.is-multi .sme-list { flex: none; }
+/* колонки одинаковой ширины — по самой широкой */
+.sme-card.is-multi { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
 .sme-w {
   position: relative; height: 39px; display: flex; align-items: center; padding: 0 9px 0 10px;
   border: 1px solid transparent; border-radius: 2px; cursor: default;
@@ -1533,6 +1523,7 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 /* превью темы 306×181 (большое; в плашках уменьшено). Цвета — переменные --pv-* на .tpv */
 .tpv { position: relative; display: block; width: 306px; height: 181.333px; overflow: hidden; background: var(--pv-bg); }
 .tpv > i { position: absolute; display: block; }
+.tpv__veil { inset: 0; background: var(--pv-veil); }
 .tpv__acc { left: 0; top: 0; width: 128px; height: 100%; background: var(--pv-acc); }
 .tpv__bird { left: 13px; top: 11px; width: 22px; height: 22px; border-radius: 50%; background: var(--pv-bird-bg); font: normal 22px/22px "cbuc-icons24"; color: var(--pv-bird); text-align: center; }
 .tpv__title { left: 46px; top: 19px; width: 52px; height: 7px; border-radius: 4px; background: var(--pv-title); }
@@ -1720,117 +1711,8 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .stage.is-bg-img.is-acc-veil .content::after { left: calc(1px + var(--align-shift)); width: calc(var(--acc-gap) + var(--mid) + 321px); }
 /* аккордеон лежит на общем забелении; раскрытая по ховеру панель — поверх середины, ей нужна своя подложка */
 .stage.is-bg-img.is-acc-veil .accordion:not(.is-panel-open) { background: none; }
-
-/* ---------- Сценарий «Админка (Inside)» (Figma xMQ3ZEN4AUINgwjVoxR8hS 18428:12935) ----------
-   Экран 1600×843 поверх конструктора; ниже — полоса подложки. Весь экран — картинка, поверх — живое превью. */
-.ins { position: absolute; inset: 0; z-index: 45; background: #fff; font-family: "Inter", sans-serif; line-height: normal; color: #000; }
-.ins[hidden] { display: none; }
-.ins p { margin: 0; }
-.ins__screen { position: relative; height: 843px; overflow: hidden; border: 1px solid #eaeaea; border-radius: 0 8px 0 0; }
-.ins__bg { position: absolute; left: -1px; top: -1px; display: block; }
-.ins-main { flex: none; width: 887px; display: flex; flex-direction: column; gap: 90px; padding: 72px 0 0 12px; background: #f8f8f8; }
-.ins-top { display: flex; align-items: center; gap: 24px; padding-right: 12px; }
-.ins-intro { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; color: #aab0c1; }
-.ins-intro__text { display: flex; flex-direction: column; gap: 8px; }
-.ins-intro__title, .ins-info__title { font-size: 20px; letter-spacing: -.282px; }
-.ins-intro__sub, .ins-info__sub { font-size: 15px; letter-spacing: -.2115px; }
-.ins-setup {
-  height: 32px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px 1px; border-radius: 100px; background: #6757b7;
-  box-shadow: 0 0 3px rgba(0, 0, 0, .1); font: inherit; font-size: 16px; letter-spacing: -.2256px; color: #fff; transition: background-color .12s;
-}
-.ins-setup:hover { background: #5a49ab; }
-.ins-setup .ico { color: #fff; }
-.ins-info { display: flex; align-items: flex-start; gap: 24px; color: #aab0c1; }
-.ins-info__item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-.ins-info__ico { width: 32px; height: 32px; margin-bottom: 8px; padding-bottom: 1px; display: flex; align-items: center; justify-content: center; font: 32px/1 "cbuc-icons"; color: #5a49ab; opacity: .5; }
-.ins-info__sep { align-self: stretch; flex: none; width: 1px; background: #eaeaea; }
-
-/* Превью админки 937×350 (Figma 19453:49634) — то же превью в масштабе 1.4894 (аккордеон 113, ЦУ 138 — как в макете),
-   снизу обрезано; скруглены левые углы. Ховер (Figma 18431:19444): затенение 10% и «Настроить ›» по центру — translucent-кнопка */
-.ins-pv { position: absolute; left: 608px; top: 480px; width: 937px; height: 350px; overflow: hidden; border-radius: 9.921px 0 0 9.921px; cursor: pointer; }
-.ins-pv .ipv { position: absolute; left: 0; top: 0; width: 629.112px; height: 235.22px; border-width: .661px; border-radius: 6.661px 0 0 6.661px; transform: scale(1.4894); transform-origin: 0 0; }
-.ins-pv__hover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding-left: 1px; background: rgba(0, 0, 0, .1); opacity: 0; transition: opacity .12s; }
-.ins-pv:hover .ins-pv__hover, .ins-pv:focus-visible .ins-pv__hover { opacity: 1; }
-.ins-pv__btn {
-  height: 32px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px 1px; border-radius: 100px; background: rgba(0, 0, 0, .2);
-  font-size: 16px; letter-spacing: -.2256px; color: #fff; white-space: nowrap;
-}
-.ins-pv__btn .ico { color: #fff; }
-
-/* Превью настроенного интерфейса 470×250 (Figma 18659:78067): цвета — токены темы со сцены (аккордеон, маркер, акценты, фон) */
-.ipv { position: relative; isolation: isolate; flex: none; width: 470px; height: 250px; display: flex; align-items: flex-start; overflow: hidden; border: .661px solid #eaeaea; border-radius: 10.074px; background: var(--content-bg); }
-.stage.is-bg-img .ipv::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: var(--bg-tint, linear-gradient(transparent, transparent)), var(--bg-img) center / cover; background-blend-mode: soft-light, normal; opacity: var(--bg-op, 1); filter: var(--bg-filter, none);
-}
-/* забеление 70% под страницей и ЦУ (и под аккордеоном, пока он белый 70%) — как на сцене (.content::after) */
-.stage.is-bg-img .ipv::after { content: ""; position: absolute; left: 76.042px; top: 0; right: 0; bottom: 0; z-index: -1; pointer-events: none; background: rgba(255, 255, 255, .7); }
-.stage.is-bg-img.is-acc-veil .ipv::after { left: 0; }
-.stage.is-bg-img.is-acc-veil .ipv__acc { background: none; }
-.ipv i { display: block; }
-.ipv__acc { flex: none; width: 76.042px; height: 269.105px; background: var(--acc-bg); }
-.ipv__head { display: flex; align-items: center; gap: 3.576px; padding: 4.47px 0 2.682px 7.153px; }
-.ipv__bird { position: relative; flex: none; width: 11.4px; height: 11.4px; }
-.ipv__bird > * { position: absolute; left: 0; top: 0; transform: scale(.475); transform-origin: 0 0; }
-.ipv__bird .ico24 { color: var(--acc-bird, var(--acc-marker)); background: var(--acc-bird-bg); border-radius: 50%; }
-.ipv__logo { display: flex; color: var(--acc-text); }
-.ipv__logo svg { width: 15.78px; height: 7.8px; }
-.ipv__item { display: flex; align-items: center; gap: 3.576px; padding: 3.576px 7.153px; }
-.ipv__item i { flex: none; width: 10.729px; height: 10.729px; border-radius: 50%; background: var(--acc-icon); }
-.ipv__item b { width: 44.704px; height: 2.682px; border-radius: 3px; background: var(--acc-text); opacity: .3; }
-.ipv__item.is-sel { background: var(--acc-item-selected); box-shadow: inset 2.682px 0 var(--acc-marker); }
-.ipv__item.is-sel i { background: var(--acc-text); }
-.ipv__dash { flex: 1 1 0; min-width: 0; max-width: 515.26px; height: 248.478px; display: flex; }
-.ipv__page { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.ipv__row1 { flex: none; height: 27.772px; display: flex; align-items: center; justify-content: space-between; padding: 0 7.935px 0 6.612px; }
-.ipv__a1 { width: 15.87px; height: 10.58px; border-radius: 24px; background: var(--acc-marker); }
-.ipv__search { width: 59.511px; height: 10.58px; border-radius: 13px; background: #fff; }
-.ipv__tabs { flex: none; height: 18.515px; display: flex; justify-content: flex-end; align-items: flex-start; gap: 5.29px; padding: 6.613px 7.935px 0 0; }
-.ipv__tab { display: flex; align-items: center; gap: 2.645px; }
-.ipv__tab i { width: 25.127px; height: 6.612px; border-radius: 10px; background: rgba(51, 51, 51, .07); }
-.ipv__tab .ipv__dot { width: 6.612px; border-radius: 4px; background: var(--accent2); }
-.ipv__tab--on { width: 35.707px; flex-direction: column; align-items: stretch; }
-.ipv__tab--on i { width: auto; }
-.ipv__tab .ipv__under { height: 2.645px; border-radius: 4px; background: var(--accent2); }
-.ipv__card { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 5.29px; padding-top: 5.29px; border-radius: 0 5.29px 0 0; background: #fff; box-shadow: 0 0 2.645px rgba(0, 0, 0, .06); }
-.ipv__line { display: flex; gap: 6.612px; padding-left: 9.257px; }
-.ipv__line > span, .ipv__line > span > span { display: flex; gap: 3.967px; }
-.ipv__line > span { flex-direction: column; }
-.ipv__line span i { height: 5.29px; border-radius: 10px; background: rgba(51, 51, 51, .07); }
-.ipv__sq { flex: none; width: 27.772px; height: 27.772px; border-radius: 6px; background: rgba(51, 51, 51, .07); }
-.ipv__sep { flex: none; height: .661px; background: rgba(51, 51, 51, .07); }
-.ipv__rp { flex: none; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8.596px 5.29px 7.935px; }
-.ipv__rp > span { display: flex; flex-direction: column; gap: 6.612px; }
-.ipv__rp i { width: 11.241px; height: 10.58px; border-radius: 10px; background: rgba(51, 51, 51, .07); }
-.ipv__rp .ipv__shop { height: 23.804px; border-radius: 13px; background: #f6733c; }
-.ipv__rp .ipv__lav { border-radius: 13px; background: #eeebff; }
-.ipv__cu { flex: none; align-self: stretch; width: 92.573px; display: flex; flex-direction: column; gap: 2.863px; padding: 5.29px; overflow: hidden; background: var(--cu-bg); } /* как на сцене: под ЦУ виден фон темы */
-/* позиционирование контента со сцены («По центру» / «Слева»): середина превью сужается, как на сцене (696 из 996), блок
-   «аккордеон + середина + ЦУ» — по центру (--center со сцены) или у левого края; по бокам — фон страницы.
-   168.615 — аккордеон 76.042 + ЦУ 92.573; .1506 — половина освободившейся доли (1 − .6988) / 2 */
-.stage.is-aligned .ipv__dash { flex: none; width: calc((100% - 168.615px) * .6988); }
-.stage.is-aligned .ipv__acc { margin-left: calc((100% - 168.615px) * .1506 * var(--center)); }
-.stage.is-bg-img.is-aligned .ipv::after { left: calc(76.042px + (100% - 168.615px) * .1506 * var(--center)); right: auto; width: calc((100% - 168.615px) * .6988 + 92.573px); }
-.stage.is-bg-img.is-aligned.is-acc-veil .ipv::after { left: calc((100% - 168.615px) * .1506 * var(--center)); width: calc((100% - 168.615px) * .6988 + 168.615px); }
-.ipv__note { flex: none; display: flex; flex-direction: column; gap: 2.863px; padding: 4.294px; border-radius: 4.329px; background: #fff; }
-.ipv__note i { background: rgba(51, 51, 51, .07); }
-.ipv__cap { position: relative; width: 39.674px; height: 5.29px; border-radius: 54px; }
-.ipv__cap::before { content: ""; position: absolute; left: -4.294px; top: -.218px; width: 1.431px; height: 5.725px; border-radius: 0 1.431px 1.431px 0; background: rgba(51, 51, 51, .07); }
-.ipv__blk { height: 35.782px; border-radius: 6px; }
-.ipv__sqs { display: flex; gap: 2.863px; overflow: hidden; } /* три квадрата шире карточки — третий обрезается по её краю, как в макете */
-.ipv__sqs i { flex: none; width: 26.449px; height: 26.449px; border-radius: 6px; }
-.ipv__note--news { height: 44.303px; flex-direction: row; }
-.ipv__pic { flex: none; width: 35.782px; border-radius: 6px; }
-.ipv__note--news > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2.147px; }
-.ipv__note--news span i { height: 3.967px; border-radius: 54px; }
-.ipv__note--news .ipv__end { margin-top: auto; }
-
-/* Сценарий «Аккаунт» (Figma xMQ3ZEN4AUINgwjVoxR8hS 18637:73187): экран — картинка, поверх живая середина: превью, текст, «Настроить», карточки */
-.ins-main--acc { position: absolute; left: 199px; top: 45px; width: 1090px; height: 797px; align-items: center; gap: 100px; padding: 60px 37px; }
-.ins-main--acc > * { width: 100%; }
-.ins-main--acc .ins-top { padding-right: 0; }
-/* превью 620×350 — то же превью в масштабе 1.4 (аккордеон 106, ЦУ 130 — как в макете); поля задают место под увеличенное */
-.ins-main--acc .ipv { width: 442.857px; border-radius: 7.196px; transform: scale(1.4); transform-origin: 0 0; margin: 0 177.143px 100px 0; }
+/* аккордеон без цвета: раскрытой панели над серединой нужна своя подложка — забеление 70% с размытием контента под ней */
+.stage.is-bg-img.is-acc-clear .accordion.is-panel-open { background: rgba(255, 255, 255, .7); backdrop-filter: blur(20px); }
 
 /* ---------- Окно настроек пункта подменю (Figma 9eLwMJLQCwT0xHKviN2j1P 18562:24378) ---------- */
 /* поверх редактора подменю (25) и его щита; выпадающие списки окна — выше (mw-menu, 30) */
@@ -1890,7 +1772,7 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 
 /* ⚙ тулбара виджета, пока открыто окно настроек */
 .sme-tb__btn.is-active { background: var(--pill-active); }
-/* элемент справа у виджетов редактора («Настройка аккордеона», «Подменю → Редактор») — как в подменю, на светлой карточке */
+/* элемент справа у виджетов редактора («Общее демо», «Подменю → Редактор») — как в подменю, на светлой карточке */
 .sme-w .sm-right { padding-left: 12px; }
 /* у пунктов редактора аккордеона отступ слева — как в аккордеоне, иначе «+» в круге съезжает вправо */
 .sme-w.ae-w .acc-item__count { padding-left: 4px; }
