@@ -2472,8 +2472,8 @@
     if (iw?.ae) renderItemWin(); // правки окна настроек видны на пункте и после перерисовки
   }
 
-  // Тулбар выделенного пункта (Figma 18582:28278, без закрепления): ⚙ — окно настроек пункта справа, «Настройка ролей»
-  // (окно «Роли» с доступом), удаление, ⋯ — меню.
+  // Тулбар выделенного пункта (Figma 18582:28278, без закрепления и ⚙): «Настроить роль» (окно «Роли» с доступом),
+  // удаление, ⋯ — меню.
   function aeToolbar() {
     const tb = el('div', 'sme-tb');
     const btn = (cls, ch, label) => {
@@ -2483,10 +2483,8 @@
       tb.append(b);
       return b;
     };
-    btn('sme-tb__btn--gear' + (iw?.ae && !iw.roles && iw.key === ae.selected ? ' is-active' : ''), '', 'Настройки')
-      .addEventListener('click', () => (iw?.ae && !iw.roles && iw.key === ae.selected ? closeItemWin() : openAeItemWin(ae.selected)));
-    const roles = btn('sme-tb__btn--roles' + (iw?.roles && iw.key === ae.selected ? ' is-active' : ''), '', 'Настройка ролей');
-    roles.dataset.tip = 'Настройка ролей';
+    const roles = btn('sme-tb__btn--roles' + (iw?.roles && iw.key === ae.selected ? ' is-active' : ''), '', 'Настроить роль');
+    roles.dataset.tip = 'Настроить роль';
     roles.addEventListener('click', () => (iw?.roles && iw.key === ae.selected ? closeItemWin() : openAeItemWin(ae.selected, true)));
     btn('sme-tb__btn--del', '', 'Удалить').addEventListener('click', () => {
       aeCommit(ae.draft.filter((it) => it.id !== ae.selected));
@@ -2523,7 +2521,8 @@
     if (!act || !ae?.selected) return;
     const id = ae.selected;
     closeAeMore();
-    if (act === 'up' || act === 'down') aeMove(id, act === 'up' ? -1 : 1);
+    if (act === 'roles') openAeItemWin(id, true);
+    else if (act === 'up' || act === 'down') aeMove(id, act === 'up' ? -1 : 1);
     else if (act === 'delete') aeCommit(ae.draft.filter((it) => it.id !== id));
   });
 
@@ -2683,10 +2682,7 @@
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       if (!dragging) {
-        // повторный клик по выделенному — окно настроек пункта, как по ⚙ (если ещё не открыто)
-        const id = w.dataset.id;
-        if (ae.selected === id && e.detail === 1 && iw?.key !== id) openAeItemWin(id);
-        else aeSelect(id);
+        aeSelect(w.dataset.id);
         return;
       }
       aeList.classList.remove('is-dragging');
