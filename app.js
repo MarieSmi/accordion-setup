@@ -46,7 +46,7 @@
       submenu: { cols: [
         [sub('Входящие', 1, { accent: '20', count: '20.7K' }), sub('Договоры'), sub('Факторинг'), sub('ЕГАИС'), sub('Меркурий'), sub('Маркировка'),
          sub('Прослеживаемость'), sub('Приказы / Извещения'), sub('Доверенности'), sub('Разобрать', 1, { count: '62' })],
-        [sub('Исходящие'), sub('Акты сверки'), sub('Инструкции'), sub('База знаний'), sub('База знаний'), sub('Заметки', 1, 'plus')],
+        [sub('Исходящие'), sub('Акты сверки'), sub('Инструкции'), sub('База знаний'), sub('База знаний'), sub('Заметки')],
       ] } },
     { id: 'accounting', title: 'Учет', short: 'Учет', icon: '',
       submenu: { headLabel: true, cols: [
@@ -1318,31 +1318,13 @@
     else if (ed) closeEditor();
   }
 
-  // Плавающий тулбар выделенного виджета (Figma rHabzni5OI5D4fxBLQdj2m 131:17364, состав 854:7145): ⚙, удалить, ⋯ (без ‹).
-  // Удаление работает, ⚙ и ⋯ — пока только наведение.
+  // Плавающий тулбар выделенного виджета (Figma rHabzni5OI5D4fxBLQdj2m 131:17364, состав 854:7145; текст — 44fX18O5Huk4hmoaANMNIC 10467:56588):
+  // заменить, стиль ⌄, «Т», цвет, удалить, ⋯ (без ‹). Заменить открывает меню «+» — выбранная страница встаёт на место виджета;
+  // удаление работает; стиль, «Т», цвет и ⋯ — пока только наведение. Тулбар один и тот же — и при выделении, и при правке текста:
+  // нажатие в нём не уводит фокус из текста, команды сначала применяют правку.
   function toolbar() {
     const tb = el('div', 'sme-tb');
-    const btn = (cls, ch, label) => {
-      const b = el('button', 'sme-tb__btn' + (cls ? ' ' + cls : ''), `<span class="ico24">${ch}</span>`);
-      b.type = 'button';
-      b.setAttribute('aria-label', label);
-      tb.append(b);
-      return b;
-    };
-    // ⚙ — окно настроек пункта (в «Общем демо» и «Подменю → Редактор»; в остальных сценариях — наведение)
-    const gear = btn('sme-tb__btn--gear' + (iw && iw.key === ed.selected ? ' is-active' : ''), '', 'Настройки');
-    // у выделенной пустой колонки («col:N») ⚙ — пока только наведение
-    if (itemSettingsOn() && !ed.selected.startsWith('col:')) gear.addEventListener('click', () => (iw && iw.key === ed.selected ? closeItemWin() : openItemWin(ed.selected)));
-    btn('sme-tb__btn--del', '', 'Удалить').addEventListener('click', deleteSelected);
-    btn('', '', 'Ещё');
-    return tb;
-  }
-
-  // Тулбар текста на время переименования виджета (Figma 44fX18O5Huk4hmoaANMNIC 10467:56588, без удаления):
-  // Стиль, «Т» и цвет — пока только наведение (без ‹). Нажатие в тулбаре не уводит фокус из текста.
-  function textToolbar() {
-    const tb = el('div', 'sme-tb sme-tb--text');
-    tb.addEventListener('mousedown', (e) => e.preventDefault());
+    tb.addEventListener('mousedown', (ev) => ev.preventDefault());
     const btn = (cls, html, label) => {
       const b = el('button', 'sme-tb__btn' + (cls ? ' ' + cls : ''), html);
       b.type = 'button';
@@ -1350,19 +1332,31 @@
       tb.append(b);
       return b;
     };
-    btn('sme-tb__style', 'Заголовок 4<span class="ico">&#xE9AA;</span>', 'Стиль текста');
-    btn('', '<span class="ico24">&#xEAC9;</span>', 'Начертание');
-    btn('sme-tb__color', '<span class="sme-tb__swatch"></span>', 'Цвет текста');
+    const ico = (ch) => `<span class="ico24">${ch}</span>`;
+    // у пустой колонки («col:N») заменять и править текст нечего
+    if (!ed.selected.startsWith('col:')) {
+      const swap = btn('sme-tb__btn--replace' + (!plusMenu.hidden && plusReplace === ed.selected ? ' is-active' : ''), ico('&#xEBD1;'), 'Заменить');
+      swap.addEventListener('click', () => {
+        if (!plusMenu.hidden && plusReplace === ed.selected) { closePlusMenu(); return; }
+        const key = ed.selected;
+        if (itemEdit) stopItemEdit(true); // правка текста применяется, виджеты перерисованы — кнопку находим заново
+        openPlusMenu($('.sme-w.is-selected .sme-tb__btn--replace', smeCard) ?? swap, key);
+      });
+      btn('sme-tb__style', 'Заголовок 4<span class="ico">&#xE9AA;</span>', 'Стиль текста');
+      btn('', ico('&#xEAC9;'), 'Начертание');
+      btn('sme-tb__color', '<span class="sme-tb__swatch"></span>', 'Цвет текста');
+    }
+    btn('sme-tb__btn--del', ico('&#xEB72;'), 'Удалить').addEventListener('click', () => { if (itemEdit) stopItemEdit(true); deleteSelected(); });
+    btn('', ico('&#xEAB4;'), 'Ещё');
     return tb;
   }
 
-  // Двойной клик по тексту виджета — переименование на месте: каретка там, куда кликнули (мимо текста — в конец),
-  // текст не выделяется. Enter или клик мимо — применить, Esc — отменить.
+  // Повторный клик по выделенному виджету (или двойной клик по тексту) — переименование на месте: каретка там, куда кликнули
+  // (мимо текста — в конец), текст не выделяется, тулбар не меняется. Enter или клик мимо — применить, Esc — отменить.
   let itemEdit = null; // { w, text, key }
   function startItemEdit(w, x, y) {
     const text = $('.sme-w__text', w);
     itemEdit = { w, text, key: w.dataset.key };
-    $('.sme-tb', w)?.replaceWith(textToolbar());
     text.contentEditable = 'plaintext-only';
     text.focus();
     let range = document.caretRangeFromPoint?.(x, y);
@@ -1587,7 +1581,7 @@
   editor.addEventListener('mousedown', (e) => {
     if (!ed || e.target.closest('.sme-mk')) return;
     if (itemEdit) {
-      if (itemEdit.text.contains(e.target) || e.target.closest('.sme-tb--text')) return;
+      if (itemEdit.text.contains(e.target) || e.target.closest('.sme-tb')) return;
       // клик по рамке виджета мимо текста правку не заканчивает: каретка — к ближайшему месту в тексте (мимо — в конец)
       if (itemEdit.w.contains(e.target)) {
         e.preventDefault();
@@ -1620,15 +1614,90 @@
       startItemEdit($(`.sme-w[data-key="${w.dataset.key}"]`, smeCard), e.clientX, e.clientY);
       return;
     }
-    // повторный клик по выделенному виджету — окно настроек пункта (там, где оно есть)
-    if (w && e.detail === 1 && ed.selected === w.dataset.key && !e.target.closest('.sme-tb') && itemSettingsOn() && iw?.key !== w.dataset.key) {
-      openItemWin(w.dataset.key);
+    // нажатие на виджет выделяет его; протяжка — перетаскивание, повторный клик по выделенному — переименование (каретка, тулбар тот же)
+    if (w && e.detail === 1 && !e.target.closest('.sme-tb')) {
+      e.preventDefault(); // без выделения текста при протяжке
+      if (smeTitle.classList.contains('is-editing')) smeTitle.blur(); // фокус не уходит сам — правку названия применяем
+      const again = ed.selected === w.dataset.key;
+      select(w.dataset.key);
+      smeDrag(e, w.dataset.key, again);
       return;
     }
     if (w) select(w.dataset.key);
     else select(null);
   });
   shield.addEventListener('mousedown', () => { if (!ed) return; stopItemEdit(true); select(null); });
+
+  // Перетаскивание виджета: нажатие и сдвиг больше 4px — виджет едет за курсором, линия показывает, куда он встанет
+  // (в любую колонку, под заголовок подменю); отпускание ставит его туда одним шагом истории, виджет остаётся выделен.
+  // Без сдвига — клик: по уже выделенному — каретка в тексте. Заголовок подменю не перетаскивается.
+  function smeDrag(e, key, again) {
+    const x0 = e.clientX, y0 = e.clientY;
+    let w = null, line = null, drop = null;
+    const move = (ev) => {
+      const dx = (ev.clientX - x0) / scale, dy = (ev.clientY - y0) / scale;
+      if (!w) {
+        if (key === 'head' || Math.hypot(dx, dy) < 4) return;
+        w = $(`.sme-w[data-key="${key}"]`, smeCard);
+        if (!w) return;
+        smeCard.classList.add('is-dragging');
+        w.classList.add('is-dragged');
+        line = smeCard.appendChild(el('div', 'sme-drop'));
+      }
+      w.style.transform = `translate(${dx}px, ${dy}px)`;
+      drop = dropAt(ev.clientX, ev.clientY, w);
+      Object.assign(line.style, { left: drop.left + 'px', top: drop.top + 'px', width: drop.width + 'px' });
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      if (!w) {
+        if (again) startItemEdit($(`.sme-w[data-key="${key}"]`, smeCard), x0, y0);
+        return;
+      }
+      smeCard.classList.remove('is-dragging');
+      moveWidget(key, drop);
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  }
+  // Куда встанет виджет: колонка под курсором (или ближайшая) и место между виджетами по их серединам;
+  // left / top / width — линия в координатах карточки.
+  function dropAt(x, y, dragged) {
+    const lists = [...smeCard.children].filter((l) => l.classList.contains('sme-list'));
+    const dist = (l) => { const r = l.getBoundingClientRect(); return x < r.left ? r.left - x : x > r.right ? x - r.right : 0; };
+    const list = lists.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+    const ci = lists.indexOf(list);
+    const card = smeCard.getBoundingClientRect(), lr = list.getBoundingClientRect();
+    const ws = [...list.querySelectorAll(':scope > .sme-w')].filter((x) => x.dataset.key !== 'head');
+    let at = ed.draft.cols[ci].length;
+    for (const x of ws) {
+      const r = x.getBoundingClientRect();
+      if (x !== dragged && y < r.top + r.height / 2) { at = +x.dataset.key.split(':')[1]; break; }
+    }
+    // линия — над следующим виджетом (кроме перетаскиваемого), иначе под предыдущим или заголовком, в пустой колонке — сверху
+    const others = [...list.querySelectorAll(':scope > .sme-w')].filter((x) => x !== dragged);
+    const next = others.find((x) => x.dataset.key !== 'head' && +x.dataset.key.split(':')[1] >= at);
+    const prev = others.filter((x) => x !== next && (x.dataset.key === 'head' || +x.dataset.key.split(':')[1] < at)).pop();
+    const ly = next ? next.getBoundingClientRect().top : prev ? prev.getBoundingClientRect().bottom : lr.top + 6 * scale;
+    return { ci, at, left: (lr.left - card.left) / scale + 6, top: (ly - card.top) / scale - 1, width: lr.width / scale - 12 };
+  }
+  function moveWidget(key, { ci, at }) {
+    const [fc, fi] = key.split(':').map(Number);
+    const draft = cloneDraft(ed.draft);
+    const [it] = draft.cols[fc].splice(fi, 1);
+    let to = fc === ci && fi < at ? at - 1 : at;
+    // закреплённые внизу остаются последними
+    const pin = draft.cols[ci].findIndex((x) => x.pinned);
+    if (pin >= 0 && !it.pinned) to = Math.min(to, pin);
+    draft.cols[ci].splice(to, 0, it);
+    let col = ci;
+    if (fc > 0 && !draft.cols[fc].length) { draft.cols.splice(fc, 1); if (ci > fc) col--; } // вторая колонка без виджетов пропадает
+    if (draftKey(draft) === draftKey(ed.draft)) { renderEditor(); return; }
+    commit(draft);
+    ed.selected = `${col}:${to}`;
+    renderEditor();
+  }
   smeCard.addEventListener('keydown', (e) => {
     if (!itemEdit) return;
     if (e.key === 'Enter') { e.preventDefault(); stopItemEdit(true); }
@@ -2175,10 +2244,15 @@
     iconPick.hidden = false;
     iconPickList.scrollTop = 0;
     anchor.classList.add('is-active');
-    // Панель — поверх иконки: левый верхний угол панели в левом верхнем углу иконки (как окна «Меню» и «Логотип»).
+    // Панель — поверх иконки: кружок цвета в её шапке встаёт центром на центр иконки, вызвавшей панель.
     const r = stageRect(anchor);
-    iconPick.style.left = Math.round(Math.max(0, Math.min(r.left, 1600 - iconPick.offsetWidth))) + 'px';
-    iconPick.style.top = Math.round(Math.max(0, Math.min(r.top, 900 - iconPick.offsetHeight))) + 'px';
+    iconPick.style.left = '0px';
+    iconPick.style.top = '0px';
+    const sw = stageRect($('.icon-pick__color', iconPick)), p = stageRect(iconPick);
+    const left = r.left + r.width / 2 - (sw.left - p.left + sw.width / 2);
+    const top = r.top + r.height / 2 - (sw.top - p.top + sw.height / 2);
+    iconPick.style.left = Math.round(Math.max(0, Math.min(left, 1600 - iconPick.offsetWidth))) + 'px';
+    iconPick.style.top = Math.round(Math.max(0, Math.min(top, 900 - iconPick.offsetHeight))) + 'px';
   }
   function closeIconPick() {
     iconPick.hidden = true;
@@ -2218,6 +2292,7 @@
   const accPlus = $('.acc-plus');
   let plusOwner = smePlus; // кнопка, открывшая меню: «+» редактора, плюс у виджета или «+» шапки аккордеона
   let plusAt = null; // плюс у виджета или пустая колонка: куда встанет страница — { col, at }
+  let plusReplace = null; // «Заменить» в тулбаре: ключ виджета, на место которого встанет страница
 
   function renderPlusMenu() {
     const q = plusSearch.value.trim().toLowerCase();
@@ -2239,9 +2314,10 @@
     };
     // У «+» шапки аккордеона строк «Добавить виджет» и «Добавить колонку» нет. Реестр двухколоночный:
     // «Добавить колонку» — пока колонка одна (вторая без виджетов при удалении последнего пропадает).
-    if (!q && fromEditor) {
+    if (!q && fromEditor && !plusReplace) {
       row('', '<span class="ico pm-ico">&#xEADD;</span><span>Добавить виджет</span>');
       if (itemSettingsOn() && ed.draft.cols.length < 2) row('', '<span class="ico24 pm-ico pm-ico--col">&#xEAEE;</span><span>Добавить колонку</span>', addColumn);
+      plusList.append(el('div', 'pm-sep')); // отделяет команды от страниц, как группы между собой
     }
     for (const n of PLUS_TREE) {
       if (n.sep) { if (!q) plusList.append(el('div', 'pm-sep')); continue; }
@@ -2252,7 +2328,7 @@
       row('', `<span class="ico pm-ico">${arrow}</span><span>${n.title}</span>`,
         n.kind === 'group' && (fromEditor || fromAcc || n.items.length) ? () => { n.open = !n.open; renderPlusMenu(); } : null);
       // В «Общем демо» страница «Моей компании» из «+» шапки аккордеона добавляет пункт в аккордеон.
-      const onPage = (t) => (fromAcc ? () => aeAddPage(t) : fromEditor ? () => addPage(t) : accAddItems() && n.title === 'Моей компании' ? () => addAccItem(t) : null);
+      const onPage = (t) => (fromAcc ? () => aeAddPage(t) : plusReplace ? () => replacePage(t) : fromEditor ? () => addPage(t) : accAddItems() && n.title === 'Моей компании' ? () => addAccItem(t) : null);
       if (n.open || (q && kids.length)) for (const t of (q ? kids : pages(n))) row('pm-row--page', `<span>${t}</span>`, onPage(t));
     }
   }
@@ -2307,7 +2383,7 @@
     renderAccordion();
   }
 
-  // ---------- Редактор аккордеона (вход — кнопка «Настроить» внизу аккордеона, пока скрыта) ----------
+  // ---------- Редактор аккордеона (вход — кнопка «Настроить» внизу аккордеона, в «Общем демо» — по долгому наведению на меню) ----------
   // Кнопка-ссылка «Настроить» внизу аккордеона (в узком — карандаш, разворачивает аккордеон) открывает окно поверх аккордеона — как редактор подменю:
   // птичка в шапке окна встаёт на птичку аккордеона. В шапке окна — виджет шапки (птичка и saby): не удаляется,
   // ховер как в аккордеоне, клик — окно «Логотип». В карточке — аккордеон в его цветах: «ПРЕДПРИЯТИЕ» — статика,
@@ -2341,13 +2417,11 @@
     accEditor.hidden = false;
     stage.classList.add('is-ae-open');
     accGear.classList.add('is-active');
-    // аккордеон окна — на аккордеоне страницы (у левого края сцены окно прижимается к краю), до низа сцены
+    // редактор — ровно на аккордеоне страницы: аккордеон сам переходит в режим редактирования
     const acc = stageRect($('.accordion'));
-    const card = $('.ae-card', accEditor);
-    const top = Math.round(Math.max(0, acc.top - card.offsetTop));
-    accEditor.style.left = Math.round(Math.max(0, acc.left - card.offsetLeft)) + 'px';
-    accEditor.style.top = top + 'px';
-    accEditor.style.height = (900 - top) + 'px';
+    accEditor.style.left = Math.round(acc.left) + 'px';
+    accEditor.style.top = Math.round(acc.top) + 'px';
+    accEditor.style.height = Math.round(acc.height) + 'px';
   }
   function closeAe() {
     closeItemWin();
@@ -2386,7 +2460,9 @@
       w.append(el('div', 'acc-item__btn' + (view.photo && !view.customIcon ? ' acc-item__btn--photo' : ''),
         `${iconHTML(view)}<span class="acc-item__title">${it.title}</span>${accRightHTML(aeRight(it))}`));
       // у закреплённого снизу плюсов нет (над ним добавляют плюсом пункта выше)
-      if (it.id === selected) w.append(...(it.pinned ? [] : [mk('top', i), mk('bottom', i + 1)]), aeToolbar());
+      // плюсы сверху и снизу — по наведению и у выделенного
+      if (!it.pinned) w.append(mk('top', i), mk('bottom', i + 1));
+      if (it.id === selected) w.append(aeToolbar());
       aeList.append(w);
     });
     watchCut(aeList);
@@ -2396,8 +2472,8 @@
     if (iw?.ae) renderItemWin(); // правки окна настроек видны на пункте и после перерисовки
   }
 
-  // Тулбар выделенного пункта (Figma 18582:28278): «Закрепить снизу» / «Открепить» (18585:28344), ⚙ — окно настроек пункта
-  // справа, удаление, ⋯ — наведение.
+  // Тулбар выделенного пункта (Figma 18582:28278, без закрепления): ⚙ — окно настроек пункта справа, «Настройка ролей»
+  // (окно «Роли» с доступом), удаление, ⋯ — меню.
   function aeToolbar() {
     const tb = el('div', 'sme-tb');
     const btn = (cls, ch, label) => {
@@ -2407,12 +2483,11 @@
       tb.append(b);
       return b;
     };
-    const pinned = !!ae.draft.find((it) => it.id === ae.selected)?.pinned;
-    const pin = btn('sme-tb__btn--pin', pinned ? '' : '', pinned ? 'Открепить' : 'Закрепить снизу');
-    pin.dataset.tip = pinned ? 'Открепить' : 'Закрепить снизу';
-    pin.addEventListener('click', () => aeSetPin(ae.selected, !pinned));
-    btn('sme-tb__btn--gear' + (iw?.ae && iw.key === ae.selected ? ' is-active' : ''), '', 'Настройки')
-      .addEventListener('click', () => (iw?.ae && iw.key === ae.selected ? closeItemWin() : openAeItemWin(ae.selected)));
+    btn('sme-tb__btn--gear' + (iw?.ae && !iw.roles && iw.key === ae.selected ? ' is-active' : ''), '', 'Настройки')
+      .addEventListener('click', () => (iw?.ae && !iw.roles && iw.key === ae.selected ? closeItemWin() : openAeItemWin(ae.selected)));
+    const roles = btn('sme-tb__btn--roles' + (iw?.roles && iw.key === ae.selected ? ' is-active' : ''), '', 'Настройка ролей');
+    roles.dataset.tip = 'Настройка ролей';
+    roles.addEventListener('click', () => (iw?.roles && iw.key === ae.selected ? closeItemWin() : openAeItemWin(ae.selected, true)));
     btn('sme-tb__btn--del', '', 'Удалить').addEventListener('click', () => {
       aeCommit(ae.draft.filter((it) => it.id !== ae.selected));
     });
@@ -2426,9 +2501,6 @@
   const aeMoreOpen = () => !aeMore.hidden;
   function openAeMore(btnMore) {
     closeIwMenu();
-    const pinned = !!ae.draft.find((it) => it.id === ae.selected)?.pinned;
-    $('#aeMorePinIco').textContent = pinned ? '' : '';
-    $('#aeMorePinText').textContent = pinned ? 'Открепить' : 'Закрепить снизу';
     aeMore.hidden = false;
     btnMore.classList.add('is-active');
     const tb = btnMore.closest('.sme-tb');
@@ -2451,10 +2523,18 @@
     if (!act || !ae?.selected) return;
     const id = ae.selected;
     closeAeMore();
-    if (act === 'pin') aeSetPin(id, !ae.draft.find((it) => it.id === id).pinned);
-    else if (act === 'settings') openAeItemWin(id);
+    if (act === 'up' || act === 'down') aeMove(id, act === 'up' ? -1 : 1);
     else if (act === 'delete') aeCommit(ae.draft.filter((it) => it.id !== id));
   });
+
+  // «Переместить → Вверх / Вниз»: пункт меняется местами с соседом; закреплённый снизу остаётся последним
+  function aeMove(id, step) {
+    const draft = ae.draft.slice();
+    const i = draft.findIndex((it) => it.id === id), j = i + step;
+    if (j < 0 || j >= draft.length || draft[i].pinned || draft[j].pinned) return;
+    [draft[i], draft[j]] = [draft[j], draft[i]];
+    aeCommit(draft, id);
+  }
 
   // Закрепить снизу можно только один пункт: он уходит в самый низ, у прежнего закреплённого закрепление снимается.
   // Открепленный пункт остаётся на месте.
@@ -2663,13 +2743,18 @@
     update({ view: 'wide' });
     setTimeout(openAe, RESIZE_MS + 20);
   });
-  // «+» шапки окна — меню «+», страница встаёт пунктом в конец
+  // «+» строки шапки аккордеона — меню «+», страница встаёт пунктом в конец
   const aePlus = $('#aePlus');
-  aePlus.addEventListener('click', () => (plusMenu.hidden ? openPlusMenu(aePlus) : closePlusMenu()));
+  aePlus.addEventListener('click', (e) => {
+    e.stopPropagation(); // «+» — в строке шапки, клик не открывает «Логотип»
+    plusMenu.hidden ? openPlusMenu(aePlus) : closePlusMenu();
+  });
   aeUndo.addEventListener('click', () => aeGo(-1));
   aeRedo.addEventListener('click', () => aeGo(1));
   aeReset.addEventListener('click', () => aeCommit(aeBase()));
   $('#aeDone').addEventListener('click', saveAe);
+  $('#aeApply').addEventListener('click', saveAe);
+  $('#aeCancel').addEventListener('click', closeAe);
   $('#aeClose').addEventListener('click', () => {
     if (aeKey(ae.draft) === ae.hist[0]) closeAe();
     else smeConfirm.hidden = false;
@@ -2723,6 +2808,8 @@
     iw = { key, title: head ? d.head : it.title, level: it?.level ?? 1, pinned: !!it?.pinned, ...iwFromRight(right) };
     iw.start = iwState();
     iwTitle.textContent = iw.title;
+    iwTitle.contentEditable = 'plaintext-only';
+    itemWin.classList.remove('is-roles');
     renderItemWin();
     itemWin.hidden = false;
     // левый край — в 8 от правого края виджета, верх — по верху виджета
@@ -2734,19 +2821,22 @@
 
   // Пункт аккордеона в его редакторе: то же окно (Figma 18585:28421) — иконка у названия, «Наполнение пункта»
   // (Команды, Выводить, чекбокс) и «Закрепить пункт снизу»; встаёт справа от пункта в 8px.
-  function openAeItemWin(id) {
+  // roles — окно «Роли» (из тулбара): в шапке «Роли» без иконки и без переименования, внутри — доступ
+  function openAeItemWin(id, roles = false) {
     closeOtherWindows();
     if (!plusMenu.hidden) closePlusMenu();
     closeIconPick();
     const it = ae.draft.find((x) => x.id === id);
-    iw = { ae: true, key: id, title: it.title, level: 1, pinned: !!it.pinned, ...iwFromRight(aeRight(it)) };
+    iw = { ae: true, roles, key: id, title: it.title, level: 1, pinned: !!it.pinned, ...iwFromRight(aeRight(it)) };
     iw.start = iwState();
-    iwTitle.textContent = iw.title;
+    iwTitle.textContent = roles ? 'Роли' : iw.title;
+    iwTitle.contentEditable = roles ? 'false' : 'plaintext-only';
+    itemWin.classList.toggle('is-roles', roles);
     $('#iwIcon').innerHTML = iconHTML({ ...ALL_SECTIONS[id], customIcon: it.icon });
     renderItemWin();
     itemWin.hidden = false;
     placeAeItemWin(id);
-    $('.sme-tb__btn--gear', aeList)?.classList.add('is-active');
+    $(roles ? '.sme-tb__btn--roles' : '.sme-tb__btn--gear', aeList)?.classList.add('is-active');
   }
   // окно — справа от пункта в 8, верх — по верху пункта
   function placeAeItemWin(id) {
@@ -2760,17 +2850,15 @@
     iw = null;
     closeIwMenu();
     itemWin.hidden = true;
-    for (const g of document.querySelectorAll('.sme-tb__btn--gear.is-active')) g.classList.remove('is-active');
+    for (const g of document.querySelectorAll(':is(.sme-tb__btn--gear, .sme-tb__btn--roles).is-active')) g.classList.remove('is-active');
   }
 
   function renderItemWin() {
     const acc = !!iw.ae; // пункт аккордеона в его редакторе
     const head = !acc && iw.key === 'head';
-    // «Закрепить пункт снизу» — только у пункта аккордеона; «Вложенность» и «По клику» — только у пункта подменю
-    const rows = { main: !acc, level: !head && !acc, show: iw.cmd === 'count', side: head && iw.cmd === 'add', pin: acc && !iw.pinned };
-    $('#iwIcon').hidden = !acc;
-    $('#iwFillTitle').textContent = acc ? 'Наполнение пункта' : 'Дополнительно';
-    $('#iwCmdName').textContent = acc ? 'Команды' : 'Команда';
+    // у пункта аккордеона доступ — в окне «Роли»; «Вложенность», «По клику» и «Дополнительно» — у пункта подменю
+    const rows = { main: !acc, level: !head && !acc, fill: !acc, show: iw.cmd === 'count', side: head && iw.cmd === 'add', access: !!iw.roles };
+    $('#iwIcon').hidden = !acc || iw.roles;
     for (const n of itemWin.querySelectorAll('[data-row]')) n.hidden = !rows[n.dataset.row];
     $('#iwLevel').textContent = IW_LEVELS.find(([v]) => v === iw.level)[1];
     $('#iwPage').textContent = iw.title;
@@ -2778,7 +2866,6 @@
     $('#iwShow').textContent = IW_SHOWS.find(([v]) => v === iw.show)[1];
     $('#iwPanel').classList.toggle('is-on', iw.panel);
     for (const b of $('#iwSide').children) b.classList.toggle('is-on', b.dataset.side === iw.side);
-    $('#iwPinned').hidden = !(acc && iw.pinned); // закреплённый — свойство «Закреплен снизу ×» в блоке вместо чипсы
     $('#iwReset').disabled = iwState() === iw.start;
     // настройки сразу видны на виджете (название, уровень, элемент справа); в черновик — по ✓, ✕ возвращает виджет как был
     if (acc) {
@@ -2876,8 +2963,6 @@
   $('#iwPanel').addEventListener('click', () => iwSet({ panel: !iw.panel }));
   $('#iwSide').addEventListener('click', (e) => { const b = e.target.closest('[data-side]'); if (b) iwSet({ side: b.dataset.side }); });
   // у пункта аккордеона чипса и × свойства — то же действие, что в тулбаре: применяются сразу
-  $('#iwPin').addEventListener('click', () => (iw.ae ? aeSetPin(iw.key, true) : iwSet({ pinned: true })));
-  $('#iwUnpin').addEventListener('click', () => (iw.ae ? aeSetPin(iw.key, false) : iwSet({ pinned: false })));
 
   // Выпадающие списки окна («Вложенность», «Команда», «Выводить»): первый пункт встаёт на место ссылки, выбранный — с точкой.
   let iwMenuFor = null;
@@ -2902,6 +2987,21 @@
   const iwToggle = (link, ...args) => (iwMenuFor === link ? closeIwMenu() : openIwMenu(link, ...args));
   $('#iwLevel').addEventListener('click', (e) => iwToggle(e.currentTarget, IW_LEVELS, iw.level, 190, (v) => iwSet({ level: v })));
   $('#iwCmd').addEventListener('click', (e) => iwToggle(e.currentTarget, IW_CMDS, iw.cmd, 190, (v) => iwSet({ cmd: v })));
+  // «Заменить»: страница встаёт на место выделенного виджета (уровень и закрепление сохраняются), виджет остаётся выделен
+  function replacePage(title) {
+    const key = plusReplace;
+    const draft = cloneDraft(ed.draft);
+    if (key === 'head') draft.head = title;
+    else {
+      const [c, i] = key.split(':').map(Number);
+      const it = draft.cols[c][i];
+      draft.cols[c][i] = { ...sub(title, it.level), ...(it.pinned && { pinned: true }) };
+    }
+    closePlusMenu();
+    commit(draft);
+    select(key);
+  }
+
   $('#iwShow').addEventListener('click', (e) => iwToggle(e.currentTarget, IW_SHOWS, iw.show, 271, (v) => iwSet({ show: v })));
   $('#iwMenuClose').addEventListener('click', closeIwMenu);
   stage.addEventListener('mousedown', (e) => {
@@ -2912,7 +3012,7 @@
   // Зона счётчика с «Открывать панель по клику на счетчик» — свой клик: пункт по нему не открывается (панели пока нет).
   for (const box of [list, layer]) box.addEventListener('click', (e) => { if (e.target.closest('.sm-right--btn')) e.stopPropagation(); }, true);
 
-  function openPlusMenu(owner) {
+  function openPlusMenu(owner, replace = null) {
     // окно настроек пункта закрывается без сохранения (как по ✕); виджеты перерисовываются — плюс находим заново
     if (iw) {
       const m = owner.classList.contains('sme-mk') && owner.className.match(/sme-mk--\w+/)[0];
@@ -2925,10 +3025,12 @@
       if (w && acc) owner = $(`.ae-w[data-id="${w.dataset.id}"] > .${m}`, aeList);
       else if (w) owner = $(`.sme-w[data-key="${w.dataset.key}"] > .${m}`, smeCard);
       else if (li >= 0) owner = smeCard.children[li];
+      else if (replace) owner = $('.sme-w.is-selected .sme-tb__btn--replace', smeCard);
     }
     if (owner !== accPlus) stopTitleEdit(true);
     plusOwner = owner;
     plusAt = owner.dataset.at == null ? null : { col: +owner.dataset.col, at: +owner.dataset.at };
+    plusReplace = replace;
     plusSearch.value = '';
     // каждое открытие — исходный вид: раскрыты «Моей компании» и «Отчетность»
     for (const n of PLUS_TREE) if (n.kind === 'group') n.open = PLUS_OPEN.includes(n.title);
@@ -2943,6 +3045,7 @@
   }
   function closePlusMenu() {
     plusMenu.hidden = true;
+    plusReplace = null;
     plusOwner.classList.remove('is-active');
   }
 
@@ -2958,7 +3061,7 @@
   $('#plusMenuClose').addEventListener('click', closePlusMenu);
   plusSearch.addEventListener('input', renderPlusMenu);
   stage.addEventListener('mousedown', (e) => {
-    if (plusMenu.hidden || e.target.closest('#plusMenu') || e.target.closest('.sme-plus, .acc-plus, .sme-mk, .sme-list.is-empty .sme-empty__btn')) return;
+    if (plusMenu.hidden || e.target.closest('#plusMenu') || e.target.closest('.sme-plus, .acc-plus, .sme-mk, .sme-tb__btn--replace, .sme-list.is-empty .sme-empty__btn')) return;
     closePlusMenu();
   }, true);
 

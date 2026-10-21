@@ -586,11 +586,17 @@
         <button class="mw-menu__close" type="button" id="rpMoreClose" aria-label="Закрыть"><img src="assets/img/close-menu.svg" width="12" height="12" alt=""></button>
       </div>
       <!-- Меню «⋯» тулбара пункта в редакторе аккордеона (Figma 9eLwMJLQCwT0xHKviN2j1P 18588:28495): в 8 под тулбаром,
-           иконки пунктов — под «⋯»; «Закрепить снизу» / «Открепить», «Настроить», «Удалить» -->
+           иконки пунктов — под «⋯»; «Переместить» (как в меню «⋮» пункта аккордеона: «Вверх» / «Вниз» двигают пункт,
+           «В другой раздел» — только ховер), «Удалить» -->
       <div class="mw-menu acc-more ae-more" id="aeMore" hidden>
         <div class="mw-menu__list">
-          <button class="mw-menu__item acc-more__item" type="button" data-act="pin"><span class="ico24" id="aeMorePinIco">&#xE97C;</span><span class="mw-menu__text" id="aeMorePinText">Закрепить снизу</span></button>
-          <button class="mw-menu__item acc-more__item" type="button" data-act="settings"><span class="ico24">&#xE75D;</span><span class="mw-menu__text">Настроить</span></button>
+          <div class="mw-menu__item acc-more__item acc-more__move"><span class="ico24">&#xE63F;</span><span class="mw-menu__text">Переместить</span><span class="acc-more__arrow"><span class="ico">&#xE9AB;</span></span>
+            <div class="acc-more__sub">
+              <div class="mw-menu__item acc-more__item" data-act="up"><span class="ico24">&#xE672;</span><span class="mw-menu__text">Вверх</span></div>
+              <div class="mw-menu__item acc-more__item" data-act="down"><span class="ico24">&#xE673;</span><span class="mw-menu__text">Вниз</span></div>
+              <div class="mw-menu__item acc-more__item"><span class="ico24">&#xE63F;</span><span class="mw-menu__text">В другой раздел</span></div>
+            </div>
+          </div>
           <button class="mw-menu__item acc-more__item" type="button" data-act="delete"><span class="ico24 acc-more__danger">&#xEB72;</span><span class="mw-menu__text">Удалить</span></button>
         </div>
         <button class="mw-menu__close" type="button" id="aeMoreClose" aria-label="Закрыть"><img src="assets/img/close-menu.svg" width="12" height="12" alt=""></button>
@@ -733,13 +739,12 @@
         <div class="sme-card" id="smeCard"></div>
       </section>
 
-      <!-- Редактор аккордеона (вход — «Настроить» внизу аккордеона, пока скрыт): как редактор подменю, ширина 300; в шапке слева (Figma 18581:22935) «+»
+      <!-- Редактор аккордеона (вход — «Настроить» внизу аккордеона по долгому наведению на меню, «Общее демо»): как редактор подменю, ширина 300; в шапке слева (Figma 18581:22935) «+»
            (страница — пунктом в конец) и валик (окно цвета аккордеона — как первый кружок «Темы»).
            Под шапкой — аккордеон во всю высоту в его цветах: строка шапки (птичка и saby, клик — окно «Логотип»), группа, пункты-виджеты -->
       <section class="sm-editor acc-editor" id="accEditor" hidden aria-label="Редактор аккордеона">
         <div class="sme-head">
           <div class="sme-head__left">
-            <button class="sme-plus ae-cmd" type="button" id="aePlus" aria-label="Добавить пункт"><span class="ico24">&#xEADD;</span></button>
             <button class="ae-cmd" type="button" id="aeTheme" aria-label="Цвет аккордеона"><span class="ae-roller"></span></button>
           </div>
           <div class="sme-head__right">
@@ -755,9 +760,14 @@
           </div>
         </div>
         <div class="ae-card" id="aeCard">
-          <div class="acc-header__row ae-brand" id="aeBrand"><span class="acc-bird ae-bird"></span><span class="acc-logo" id="aeLogo"></span></div>
+          <div class="acc-header__row ae-brand" id="aeBrand"><span class="acc-bird ae-bird"></span><span class="acc-logo" id="aeLogo"></span><button class="acc-plus" type="button" id="aePlus" aria-label="Добавить пункт"><span class="ico">&#xEB25;</span></button></div>
           <div class="acc-group ae-group"><span class="acc-burger"><span class="acc-icon16">&#xE91F;</span></span><span class="acc-group__title">предприятие</span></div>
           <div class="ae-list" id="aeList"></div>
+          <!-- вместо «Настроить» внизу аккордеона: «Отменить» — выйти без изменений, под ней «Применить» -->
+          <div class="ae-actions">
+            <button class="ae-action" type="button" id="aeCancel">Отменить</button>
+            <button class="ae-action ae-action--apply" type="button" id="aeApply">Применить</button>
+          </div>
         </div>
       </section>
 
@@ -805,7 +815,7 @@
 
       <!-- Окно настроек пункта подменю (Figma 9eLwMJLQCwT0xHKviN2j1P 18562:24378): по ⚙ тулбара виджета редактора,
            в «Общем демо» и «Подменю → Редактор». Встаёт справа от виджета, как «Вкладки» от виджета вкладок.
-           Оно же — настройки пункта аккордеона в его редакторе (Figma 18585:28421): иконка у названия, «Наполнение пункта», «Закрепить пункт снизу» -->
+           Оно же — настройки пункта аккордеона в его редакторе (Figma 18585:28421): иконка у названия и доступ по ролям, как у вкладки -->
       <section class="set-win item-win" id="itemWin" hidden aria-label="Настройка пункта">
         <div class="set-win__head">
           <span class="iw-icon" id="iwIcon" hidden></span>
@@ -827,7 +837,7 @@
               <span class="ico iw-field__menu">&#xEA90;</span>
             </div>
           </div>
-          <div class="set-win__body iw-fill">
+          <div class="set-win__body iw-fill" data-row="fill">
             <div class="iw-fill__title" id="iwFillTitle">Дополнительно</div>
             <div class="iw-grid">
               <span class="iw-name" id="iwCmdName">Команда</span>
@@ -841,12 +851,10 @@
               </div>
             </div>
             <button class="iw-check" type="button" id="iwPanel" data-row="show"><span class="iw-check__box"></span><span>Открывать панель по клику на счетчик</span></button>
-            <!-- закреплённый пункт: вместо чипсы — свойство «Закреплен снизу ×» на белой подложке блока, в 8 ниже (редактор PropertyGrid,
-                 Figma lw5BTOhkhczQmdiTvlnhnG 14423:35467); × открепляет -->
-            <span class="iw-prop" id="iwPinned" hidden><span>Закреплен снизу</span><button class="iw-prop__x" type="button" id="iwUnpin" aria-label="Открепить"><span class="ico">&#xE66C;</span></button></span>
           </div>
+          <!-- доступ по ролям — как у вкладки (окно «Вкладка») -->
+          <div class="set-win__body iw-access" data-row="access"><span class="mw-link">Доступен всем пользователям</span></div>
         </div>
-        <div class="iw-chips" data-row="pin"><button class="iw-chip" type="button" id="iwPin">Закрепить пункт снизу</button></div>
       </section>
       <div class="mw-menu iw-menu" id="iwMenu" hidden>
         <div class="mw-menu__list" id="iwMenuList"></div>
