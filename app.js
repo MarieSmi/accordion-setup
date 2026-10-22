@@ -2407,7 +2407,12 @@
   // ae: { draft — [{ id, title, icon }], hist, at, selected — id | null }
   let ae = null;
   let aeEdit = null; // переименование: { text, id }
-  const aeItem = (s) => ({ id: s.id, title: s.title, icon: s.customIcon ?? null, ...(s.pinned ? { pinned: true } : {}) });
+  // свойства из окна настроек (short, pageId, selected, group) — в черновике только отличные от значений по умолчанию
+  const aeItem = (s) => ({ id: s.id, title: s.title, icon: s.customIcon ?? null, ...(s.pinned ? { pinned: true } : {}),
+    ...(s.customShort && { short: s.customShort }), ...(s.pageId && { pageId: s.pageId }),
+    ...(s.selectedTitle && { selected: s.selectedTitle }), ...(s.group && { group: s.group }) });
+  // название в узком аккордеоне по умолчанию: исходное сокращение или само название
+  const aeShortDef = (id, title) => (title === PRISTINE[id].title ? PRISTINE[id].short : title);
   const aeKey = (d) => JSON.stringify(d);
   const aeBase = () => ORIGINAL_IDS.map((id) => ({ id, title: PRISTINE[id].title, icon: null })); // «Вернуть исходное»
 
@@ -2484,6 +2489,8 @@
   // ⚙ — окно настроек пункта справа, удаление, ⋯ — меню.
   function aeToolbar() {
     const tb = el('div', 'sme-tb');
+    // при переименовании кнопка тулбара сначала применяет название (пункт перерисован — кнопки ищутся заново)
+    tb.addEventListener('click', () => stopAeEdit(true), true);
     const btn = (cls, ch, label) => {
       const b = el('button', 'sme-tb__btn' + (cls ? ' ' + cls : ''), `<span class="ico24">${ch}</span>`);
       b.type = 'button';
@@ -2491,12 +2498,12 @@
       tb.append(b);
       return b;
     };
-    let swap = btn('sme-tb__btn--replace' + (!plusMenu.hidden && plusReplace === ae.selected ? ' is-active' : ''), '', 'Заменить');
+    const swap = btn('sme-tb__btn--replace' + (!plusMenu.hidden && plusReplace === ae.selected ? ' is-active' : ''), '', 'Заменить');
     swap.addEventListener('click', () => {
       if (!plusMenu.hidden && plusReplace === ae.selected) { closePlusMenu(); return; }
       const id = ae.selected;
-      if (closeAeItemWin()) swap = $('.ae-w.is-selected .sme-tb__btn--replace', aeList); // тулбар перерисован
-      openPlusMenu(swap, id);
+      closeAeItemWin();
+      openPlusMenu($('.ae-w.is-selected .sme-tb__btn--replace', aeList) ?? swap, id); // тулбар мог перерисоваться
     });
     btn('sme-tb__btn--gear' + (iw?.ae && iw.key === ae.selected ? ' is-active' : ''), '', 'Настроить')
       .addEventListener('click', () => (iw?.ae && iw.key === ae.selected ? closeItemWin() : openAeItemWin(ae.selected)));
@@ -2513,7 +2520,8 @@
   const aeMoreOpen = () => !aeMore.hidden;
   function openAeMore(btnMore) {
     closeIwMenu();
-    if (closeAeItemWin()) btnMore = $('.sme-tb__btn--more', aeList); // тулбар перерисован
+    closeAeItemWin();
+    btnMore = $('.ae-w.is-selected .sme-tb__btn--more', aeList) ?? btnMore; // тулбар мог перерисоваться
     aeMore.hidden = false;
     btnMore.classList.add('is-active');
     const tb = btnMore.closest('.sme-tb');
@@ -2631,7 +2639,11 @@
       const s = ALL_SECTIONS[it.id];
       if (it.title !== s.title && !s.submenu.headLabel && s.submenu.head == null) s.submenu.head = s.title;
       s.title = it.title;
-      s.short = it.title === PRISTINE[it.id].title ? PRISTINE[it.id].short : it.title;
+      s.short = it.short ?? aeShortDef(it.id, it.title);
+      s.customShort = it.short ?? null;
+      s.pageId = it.pageId ?? null;
+      s.selectedTitle = it.selected ?? null;
+      s.group = it.group ?? null;
       s.customIcon = it.icon;
       s.pinned = !!it.pinned; // закреплённый снизу — в самом низу аккордеона
       return s;
@@ -2653,8 +2665,7 @@
     closeAeItemWin();
     aeSelect(id);
     const text = $(`.ae-w[data-id="${id}"] .acc-item__title`, aeList);
-    aeEdit = { text, id };
-    $('.sme-tb', text.closest('.ae-w'))?.remove();
+    aeEdit = { text, id }; // тулбар остаётся, как у виджета подменю
     text.contentEditable = 'plaintext-only';
     text.focus();
     let range = document.caretRangeFromPoint?.(x, y);
@@ -2824,7 +2835,7 @@
     if (iw.panel) r.panel = true;
     return r;
   }
-  const iwState = () => JSON.stringify([iw.title, iw.level, iw.pinned, iwRight(), iw.icon ?? null]);
+  const iwState = () => JSON.stringify([iw.title, iw.level, iw.pinned, iwRight(), iw.icon ?? null, iw.props ?? null]);
 
   function openItemWin(key) {
     closeOtherWindows();
@@ -2854,15 +2865,12 @@
     if (!plusMenu.hidden) closePlusMenu();
     closeIconPick();
     const it = ae.draft.find((x) => x.id === id);
-    iw = { ae: true, key: id, title: it.title, icon: it.icon, level: 1, pinned: !!it.pinned, ...iwFromRight(aeRight(it)) };
+    // свойства пункта: ID страницы; «Отображение на панели» — узкой, у выбранного пункта, группа («Широкой» — название)
+    const props = { pageId: it.pageId ?? id, narrow: it.short ?? aeShortDef(id, it.title), selected: it.selected ?? it.title, group: it.group ?? '' };
+    iw = { ae: true, key: id, title: it.title, icon: it.icon, props, level: 1, pinned: !!it.pinned, ...iwFromRight(aeRight(it)) };
     iw.start = iwState();
     iwTitle.textContent = iw.title;
     iwTitle.contentEditable = 'plaintext-only';
-    // свойства пункта: ID страницы; «Отображение в меню» — названия в широком / узком меню и у выбранного пункта, группа
-    $('#iwPageId').value = id;
-    $('#iwWide').value = $('#iwSelected').value = it.title;
-    $('#iwNarrow').value = ALL_SECTIONS[id]?.short ?? it.title;
-    $('#iwGroup').value = '';
     renderItemWin();
     itemWin.hidden = false;
     placeAeItemWin(id);
@@ -2902,6 +2910,11 @@
     if (acc) {
       const icon = iconHTML({ ...ALL_SECTIONS[iw.key], customIcon: iw.icon });
       iwIcon.innerHTML = icon;
+      // поля свойств — по окну; поле, в котором печатают, не трогаем
+      for (const [input, v] of [['#iwPageId', iw.props.pageId], ['#iwWide', iw.title], ['#iwNarrow', iw.props.narrow], ['#iwSelected', iw.props.selected], ['#iwGroup', iw.props.group]]) {
+        const f = $(input);
+        if (f !== document.activeElement) f.value = v;
+      }
       const aw = $(`.ae-w[data-id="${iw.key}"]`, aeList);
       if (!aw) return;
       $(':is(.acc-item__icon, .acc-cal, .acc-item__photo)', aw).outerHTML = icon;
@@ -2965,6 +2978,15 @@
       if (it.id !== id) return it;
       const next = { ...it, title, icon: iw.icon };
       delete next.right;
+      for (const k of ['short', 'pageId', 'selected', 'group']) delete next[k];
+      const p = Object.fromEntries(Object.entries(iw.props).map(([k, v]) => [k, v.replace(/\s+/g, ' ').trim()]));
+      // нетронутые «Узкой» и «Выбранный пункт» по умолчанию следуют за названием
+      const start = JSON.parse(iw.start)[5];
+      const keep = (k, own) => own != null || p[k] !== start[k];
+      if (p.narrow && p.narrow !== aeShortDef(id, title) && keep('narrow', it.short)) next.short = p.narrow;
+      if (p.pageId && p.pageId !== id) next.pageId = p.pageId;
+      if (p.selected && p.selected !== title && keep('selected', it.selected)) next.selected = p.selected;
+      if (p.group) next.group = p.group;
       if (!same) next.right = right;
       return next;
     });
@@ -2996,14 +3018,27 @@
     else renderEditor(); // виджет — снова из черновика
   });
   $('#iwReset').addEventListener('click', () => {
-    const [title, level, pinned, right, icon] = JSON.parse(iw.start);
+    const [title, level, pinned, right, icon, props] = JSON.parse(iw.start);
     iwTitle.textContent = title;
-    iwSet({ title, level, pinned, ...iwFromRight(right), nums: iw.nums, ...(iw.ae && { icon }) });
+    iwSet({ title, level, pinned, ...iwFromRight(right), nums: iw.nums, ...(iw.ae && { icon, props }) });
   });
   $('.set-win__head', itemWin).addEventListener('mousedown', (e) => startDrag(e, itemWin));
   // Название правится на месте: Enter — закончить, Esc — вернуть как было при открытии окна; пустое — тоже возвращается.
-  const iwTitleBack = () => { iwTitle.textContent = JSON.parse(iw.start)[0]; iwSet({ title: iwTitle.textContent }); };
-  iwTitle.addEventListener('input', () => iwSet({ title: iwTitle.textContent }));
+  const iwTitleBack = () => { iwTitle.textContent = JSON.parse(iw.start)[0]; iwSetTitle(iwTitle.textContent); };
+  // У пункта аккордеона «Узкой» и «Выбранный пункт», пока совпадают с названием по умолчанию, меняются вместе с ним
+  function iwSetTitle(title) {
+    if (!iw.ae) { iwSet({ title }); return; }
+    const props = { ...iw.props };
+    if (props.selected === iw.title) props.selected = title;
+    if (props.narrow === aeShortDef(iw.key, iw.title)) props.narrow = aeShortDef(iw.key, title);
+    iwSet({ title, props });
+  }
+  iwTitle.addEventListener('input', () => iwSetTitle(iwTitle.textContent));
+  // «Широкой» — то же название, что в шапке; остальные поля — свойства пункта
+  $('#iwWide').addEventListener('input', (e) => { iwTitle.textContent = e.target.value; iwSetTitle(e.target.value); });
+  for (const [input, k] of [['#iwPageId', 'pageId'], ['#iwNarrow', 'narrow'], ['#iwSelected', 'selected'], ['#iwGroup', 'group']]) {
+    $(input).addEventListener('input', (e) => iwSet({ props: { ...iw.props, [k]: e.target.value } }));
+  }
   iwTitle.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); iwTitle.blur(); }
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); iwTitleBack(); iwTitle.blur(); }

@@ -866,6 +866,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 .mw-menu__item.acc-more__item { position: relative; padding: 0 8px 0 12px; cursor: default; }
 .mw-menu__item.acc-more__item[data-act] { cursor: pointer; } /* кликабельные пункты; «Переместить» и его подменю — только ховер */
 .acc-more__item .ico24 { flex: none; height: 32px; margin-right: 8px; color: #656c87; } /* icon/secondary_icon-color */
+.acc-more__item .ico24.acc-more__ico16 { font-family: "cbuc-icons"; font-size: 16px; } /* «Заменить» — значок 16 из cbuc-icons, как в тулбаре */
 .acc-more__item .ico24.acc-more__danger { color: #c2140a; } /* icon/danger_icon-color */
 .acc-more__arrow { flex: none; width: 32px; height: 32px; margin-right: -8px; display: flex; align-items: center; justify-content: center; }
 .acc-more__arrow .ico { color: #656c87; padding-bottom: 1px; }
