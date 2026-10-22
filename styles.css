@@ -1228,7 +1228,8 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .sme-card.is-dragging .sme-w { cursor: grabbing; }
 .sme-card.is-dragging .sme-w.is-dragged { z-index: 4; background: var(--editor-card); border-color: var(--info-border); box-shadow: 0 4px 12px rgba(0, 0, 0, .12); }
 .sme-card.is-dragging :is(.sme-tb, .sme-mk) { display: none !important; }
-.sme-drop { position: absolute; z-index: 5; height: 2px; border-radius: 1px; background: var(--info-border); pointer-events: none; }
+.sme-card.is-dragging .sme-w { transition: transform .15s; }
+.sme-card.is-dragging .sme-w.is-dragged { transition: none; }
 .sme-w {
   position: relative; height: 39px; display: flex; align-items: center; padding: 0 9px 0 10px;
   border: 1px solid transparent; border-radius: 2px; cursor: default;
@@ -1310,14 +1311,18 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .ae-list.is-dragging .ae-w.is-dragged { transition: none; z-index: 4; background: var(--acc-item-hover); border-color: var(--info-border); }
 .ae-list.is-dragging :is(.sme-tb, .sme-mk) { display: none !important; }
 /* Режим редактирования — прямо в аккордеоне: окно без шапки, рамки и тени встаёт на аккордеон (место и высоту задаёт JS),
-   внизу вместо «Настроить» — «Отменить» и под ней «Применить», кнопки-ссылки как «Настроить» */
+   внизу вместо «Настроить» — «Сохранить» и справа «Отменить», кнопки-ссылки как «Настроить» */
 .acc-editor { width: auto; padding: 0; background: none; border-radius: 0; box-shadow: none; }
 .acc-editor .sme-head { display: none; }
 .stage:not(.is-aligned.is-align-center) .acc-editor .ae-card { border-top-left-radius: 8px; }
-.ae-actions { margin: auto auto 8px; padding-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ae-actions { margin: auto auto 8px; padding-top: 8px; display: flex; align-items: center; gap: 16px; }
 .ae-action { height: 24px; padding-bottom: 1px; font-size: 14px; letter-spacing: -.1974px; color: #8991a9; }
-.ae-action--apply { color: var(--acc-text); }
+.ae-action--apply { display: flex; align-items: center; gap: 4px; padding-bottom: 0; color: var(--acc-text); }
+.ae-action--apply .ico { color: inherit; padding-bottom: 1px; }
+.ae-action__text { padding-bottom: 1px; }
 .ae-action:hover { text-decoration: underline; }
+.ae-action--apply:hover { text-decoration: none; }
+.ae-action--apply:hover .ae-action__text { text-decoration: underline; }
 .stage.is-ae-open :is(.set-win, .icon-menu) { z-index: 27; } /* окно «Логотип» из шапки редактора — поверх редактора */
 
 /* плавающий тулбар выделенного виджета (Figma rHabzni5OI5D4fxBLQdj2m 131:17364): над виджетом по левому краю.
@@ -1470,7 +1475,6 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .tw-input::placeholder { color: rgba(137, 145, 169, .6); }
 .tw-access { display: flex; align-items: center; height: 24px; }
 .tw-access .mw-link { cursor: default; display: flex; align-items: center; }
-.iw-access .mw-link { height: 24px; cursor: default; display: flex; align-items: center; } /* доступ пункта аккордеона — как у вкладки */
 
 /* ---------- Меню «+» и «⋯» виджета вкладок ---------- */
 .tab-add { width: 280px; }
@@ -1748,13 +1752,14 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
   font-size: 16px; font-weight: 600; letter-spacing: -.2256px; color: var(--text); white-space: nowrap; overflow: hidden;
   background: linear-gradient(var(--border), var(--border)) bottom / 100% 1px no-repeat; outline: none; cursor: text;
 }
-/* у пункта аккордеона — иконка пункта перед названием (Figma 18582:27850): 8 + 4 от края, 24, до названия 4 */
-.iw-icon { margin-left: 12px; width: 24px; height: 24px; flex: none; display: flex; align-items: center; justify-content: center; padding-bottom: 2px; }
+/* у пункта аккордеона — иконка пункта перед названием (Figma butxp53vLxrXFluHM61BfU 17781:33779): 8 + 4 от края, 24, до текста названия 2 + 4, серая */
+.iw-icon { margin-left: 12px; width: 24px; height: 24px; flex: none; display: flex; align-items: center; justify-content: center; padding-top: 4px; } /* глиф шрифта аккордеона выше глифов cbuc-icons24 — опущен до центра строки названия */
+.iw-icon { cursor: pointer; } /* клик — выбор иконки */
 .iw-icon .acc-item__icon { display: flex; }
-.iw-icon .acc-glyph { font-size: 20px; letter-spacing: -.282px; color: #333; }
+/* в макете — иконка шрифта cbuc-icons24 (видимая ~17px); глифы шрифта аккордеона крупнее, поэтому 18px */
+.iw-icon .acc-glyph { font-size: 18px; letter-spacing: -.2538px; color: #8991a9; } /* icon/label_icon-color */
 .iw-icon .acc-item__photo { width: 24px; height: 24px; border-radius: 50%; }
-.iw-icon:not([hidden]) + .iw-title { margin-left: 4px; }
-.item-win.is-roles .iw-title { background: none; cursor: default; } /* «Роли» — заголовок, не поле: без линии и переименования */
+.iw-icon:not([hidden]) + .iw-title { margin-left: 6px; }
 .iw-blocks { display: flex; flex-direction: column; gap: 4px; }
 /* подписи — колонкой по самой длинной, 8 до редакторов; строки 24, между строками 8 */
 .iw-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
@@ -1772,6 +1777,11 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .iw-field__x, .iw-field__menu { color: #ccc; flex: none; } /* icon/unaccented_icon-color */
 .iw-field__x { margin-left: -6px; width: 16px; }
 .iw-field__menu { margin-left: auto; width: 24px; display: flex; justify-content: flex-end; padding-bottom: 1px; }
+/* свойства пункта аккордеона — поля ввода с линией (толщина --hair — см. onScale) */
+.iw-input {
+  width: 100%; height: 24px; padding: 0; border: 0; border-bottom: var(--hair, 1px) solid var(--border); border-radius: 0; outline: none; background: none;
+  font: inherit; font-size: 14px; letter-spacing: -.1974px; color: var(--text);
+}
 /* «Дополнительно»: заголовок 15 semibold, 4 до строк; чекбокс — 8 ниже строк */
 .set-win__body.iw-fill { gap: 4px; }
 .iw-fill__title { height: 24px; display: flex; align-items: center; font-size: 15px; font-weight: 600; letter-spacing: -.2115px; color: var(--text); }
