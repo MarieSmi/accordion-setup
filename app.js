@@ -142,7 +142,7 @@
   DemoFrame.mount({
     stage,
     head: {
-      title: 'Настройка интерфейса в конструкторе', version: '27.1100',
+      title: 'Настройка аккордеона', version: '27.1100',
       href: 'https://axure.tensor.ru/StandardsV8/guidelines.html', status: 'Запущено согласование 30.09.26',
     },
     devices: [
