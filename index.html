@@ -458,7 +458,7 @@
       <!-- Правая панель -->
       <aside class="right-panel">
         <div class="right-panel__cmds">
-          <button class="rp-btn rp-btn--accent" type="button" aria-label="Магазин" data-rp="shop"><span class="ico24">&#xEADD;</span><span class="click-pin" aria-hidden="true"><img src="assets/img/click-cursor.svg" width="16" height="16" alt=""></span></button>
+          <button class="rp-btn rp-btn--accent" type="button" aria-label="Магазин" data-rp="shop"><span class="ico24">&#xEADD;</span></button>
           <button class="rp-btn" type="button" aria-label="Данные" data-rp="data"><span class="rp-svg rp-svg--data"></span></button>
           <button class="rp-btn" type="button" aria-label="Слои" data-rp="layers"><span class="rp-svg rp-svg--layers"></span></button>
           <button class="rp-btn" type="button" aria-label="Фильтр" data-rp="filter"><span class="ico24">&#xE94C;</span></button>
@@ -479,7 +479,7 @@
         </div>
         <div class="rp-shop">
           <div class="rp-cats" id="rpCats"></div>
-          <div class="rp-shop__pv" id="rpShopPv"><img class="rp-shop__preview" src="assets/img/shop-preview.png" width="350" height="726" alt=""><div class="rp-shop__reports"><div class="rp-sw__title">Отчеты</div><div class="rp-sw__desc">Контролируйте движение товара, выручку и остатки на складах</div><div class="rp-sw__pv"><img src="assets/img/shop-reports.png" alt=""></div></div></div>
+          <div class="rp-shop__pv" id="rpShopPv"><img class="rp-shop__preview" src="assets/img/shop-preview.png" width="350" height="633" alt=""><div class="rp-shop__reports"><div class="rp-sw__title">Отчеты</div><div class="rp-sw__desc">Контролируйте движение товара, выручку и остатки на складах</div><div class="rp-sw__pv"><img src="assets/img/shop-reports.png" alt=""></div></div></div>
         </div>
       </section>
 
@@ -592,6 +592,7 @@
       <div class="mw-menu acc-more ae-more" id="aeMore" hidden>
         <div class="mw-menu__list">
           <button class="mw-menu__item acc-more__item" type="button" data-act="replace"><span class="ico24 acc-more__ico16">&#xEBD1;</span><span class="mw-menu__text">Заменить</span></button>
+          <button class="mw-menu__item acc-more__item" type="button" data-act="submenu"><span class="ico24">&#xE660;</span><span class="mw-menu__text">Настроить подменю</span></button>
           <button class="mw-menu__item acc-more__item" type="button" data-act="settings"><span class="ico24">&#xE75D;</span><span class="mw-menu__text">Настроить</span></button>
           <div class="mw-menu__item acc-more__item acc-more__move"><span class="ico24">&#xE63F;</span><span class="mw-menu__text">Переместить</span><span class="acc-more__arrow"><span class="ico">&#xE9AB;</span></span>
             <div class="acc-more__sub">
@@ -603,6 +604,23 @@
           <button class="mw-menu__item acc-more__item" type="button" data-act="delete"><span class="ico24 acc-more__danger">&#xEB72;</span><span class="mw-menu__text">Удалить</span></button>
         </div>
         <button class="mw-menu__close" type="button" id="aeMoreClose" aria-label="Закрыть"><img src="assets/img/close-menu.svg" width="12" height="12" alt=""></button>
+      </div>
+      <!-- Меню «⋯» тулбара виджета в редакторе подменю — как у пункта в редакторе аккордеона: в 8 под тулбаром, иконки под «⋯».
+           Заголовок не перемещается; у пустой колонки — только «Удалить» -->
+      <div class="mw-menu acc-more ae-more" id="smeMore" hidden>
+        <div class="mw-menu__list">
+          <button class="mw-menu__item acc-more__item" type="button" data-act="replace"><span class="ico24 acc-more__ico16">&#xEBD1;</span><span class="mw-menu__text">Заменить</span></button>
+          <button class="mw-menu__item acc-more__item" type="button" data-act="settings"><span class="ico24">&#xE75D;</span><span class="mw-menu__text">Настроить</span></button>
+          <div class="mw-menu__item acc-more__item acc-more__move"><span class="ico24">&#xE63F;</span><span class="mw-menu__text">Переместить</span><span class="acc-more__arrow"><span class="ico">&#xE9AB;</span></span>
+            <div class="acc-more__sub">
+              <div class="mw-menu__item acc-more__item" data-act="up"><span class="ico24">&#xE672;</span><span class="mw-menu__text">Вверх</span></div>
+              <div class="mw-menu__item acc-more__item" data-act="down"><span class="ico24">&#xE673;</span><span class="mw-menu__text">Вниз</span></div>
+              <div class="mw-menu__item acc-more__item"><span class="ico24">&#xE63F;</span><span class="mw-menu__text">В другой раздел</span></div>
+            </div>
+          </div>
+          <button class="mw-menu__item acc-more__item" type="button" data-act="delete"><span class="ico24 acc-more__danger">&#xEB72;</span><span class="mw-menu__text">Удалить</span></button>
+        </div>
+        <button class="mw-menu__close" type="button" id="smeMoreClose" aria-label="Закрыть"><img src="assets/img/close-menu.svg" width="12" height="12" alt=""></button>
       </div>
       <!-- Меню «⋮» пункта аккордеона (Figma xMQ3ZEN4AUINgwjVoxR8hS 19401:31603): крестик — поверх «⋮»;
            «Переместить» — только ховер, по нему подменю «Вверх / Вниз / В другой раздел» (19404:32415) -->
