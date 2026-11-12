@@ -1552,11 +1552,13 @@
     // при наведении карточка обводится рамкой, но не выделяется
     const sides = !selected && smeCard.querySelector('.sme-w') ? newColSides() : null;
     smeCard.classList.toggle('has-col-mk', !!sides);
+    smeCard.classList.toggle('is-edge-col', editorFromScratch()); // «С нуля»: вместо рамки карточки — линия с плюсом у края, по наведению на край
     if (sides) for (const side of ['left', 'right']) {
       if (!sides[side]) continue;
       const m = el('span', `sme-mk sme-mk--col sme-mk--col-${side}`);
       m.dataset.newcol = side;
       m.dataset.tip = 'Добавить колонку';
+      if (editorFromScratch()) m.append(el('span', 'sme-mk__dot')); // «С нуля»: точка по центру линии — плюсом только при наведении на неё
       smeCard.append(m);
     }
     smeUndo.disabled = ed.at === 0;
@@ -1844,7 +1846,7 @@
         for (const b of block) b.classList.add('is-ghost');
         copy = w.cloneNode(true);
         for (const n of copy.querySelectorAll('.sme-tb, .sme-mk')) n.remove();
-        const arrow = $('.sme-w__fold .ico', copy); // у копии пункта с вложенными стрелка свёрнута (›), после отпускания группа раскрыта
+        const arrow = $('.sme-w__fold .ico', copy); // у копии пункта с вложенными стрелка свёрнута (›), после отпускания группа — как была
         if (arrow) arrow.innerHTML = '&#xE9AB;';
         copy.className = 'sme-w sme-w--copy' + (w.classList.contains('sme-w--sub') ? ' sme-w--sub' : '');
         copy.style.width = w.offsetWidth + 'px';
@@ -1980,6 +1982,7 @@
     if (!nest && fc === ci && (at === fi || at === fi + kids + 1) && (!level || level === own)) { renderEditor(); return; } // на своё же место
     const draft = cloneDraft(ed.draft);
     let block = draft.cols[fc].splice(fi, kids + 1);
+    const lead = block[0];
     const col = draft.cols[ci];
     const toSub = () => { block = block.map((x) => (x.level === 2 ? x : { ...x, level: 2 })); };
     let to;
@@ -2001,7 +2004,8 @@
     let c = ci;
     if (fc > 0 && !draft.cols[fc].length) { draft.cols.splice(fc, 1); if (ci > fc) c--; } // вторая колонка без виджетов пропадает
     if (draftKey(draft) === draftKey(ed.draft)) { renderEditor(); return; }
-    ed.folded.delete(block[0]); // перенесённая группа — раскрыта
+    // перенесённая группа остаётся свёрнутой или раскрытой, как была (пункт мог смениться при смене уровня)
+    if (block[0] !== lead && ed.folded.delete(lead) && block[0].level !== 2) ed.folded.add(block[0]);
     commit(draft);
     ed.selected = `${c}:${to}`;
     renderEditor();

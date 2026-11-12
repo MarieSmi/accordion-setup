@@ -1299,6 +1299,24 @@ body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
 .sme-drop--col { width: 4px; height: auto; top: 6px; bottom: 6px; }
 .sme-drop--left { left: -8px; }
 .sme-drop--right { right: -8px; }
+/* «Подменю → Редактор → С нуля»: карточка рамкой не обводится. У левого / правого края — зона по всей высоте списка;
+   курсор в ней — тонкая бледная линия (1px, как рамка ховера виджета) там же, где линия вставки, и плюс по её центру */
+.sme-card.is-edge-col.has-col-mk:is(:hover, :has(> .sme-mk--col.is-active)), .sme-card.is-edge-col.is-col-drop { box-shadow: none; }
+.sme-card.is-edge-col > .sme-mk--col {
+  display: flex; top: 6px; bottom: 6px; width: 16px; height: auto; transform: none; opacity: 0;
+  background: linear-gradient(var(--info-border-soft), var(--info-border-soft)) center / 1px 100% no-repeat;
+}
+.sme-card.is-edge-col > .sme-mk--col:is(:hover, .is-active) { opacity: 1; }
+/* по центру линии — белая точка, как у плюсов виджетов; плюсом становится при наведении на неё */
+.sme-card.is-edge-col > .sme-mk--col::before, .sme-card.is-edge-col > .sme-mk--col::after { display: none; }
+.sme-mk__dot { position: relative; width: 20px; height: 20px; flex: none; display: flex; align-items: center; justify-content: center; }
+.sme-mk__dot::before { content: ""; width: 8px; height: 8px; box-sizing: border-box; border: 1px solid var(--info-border); border-radius: 7px; background: #fff; }
+.sme-mk__dot:hover::before, .is-active > .sme-mk__dot::before { width: 16px; height: 16px; border: 0; border-radius: 24px; background: var(--info-border); }
+.sme-mk__dot:active::before { background: var(--info-hover-border); }
+.sme-mk__dot::after { content: "\E95D"; position: absolute; font-family: "cbuc-icons"; font-size: 12px; line-height: 1; color: #fff; display: none; }
+.sme-mk__dot:hover::after, .is-active > .sme-mk__dot::after { display: block; }
+.sme-card.is-edge-col > .sme-mk--col-left { left: -14px; }
+.sme-card.is-edge-col > .sme-mk--col-right { right: -14px; }
 
 /* ---------- Редактор аккордеона: окно редактора подменю, внутри — аккордеон в его цветах ---------- */
 .acc-editor { width: 300px; }
