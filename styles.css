@@ -65,9 +65,10 @@
   --editor-card: #f9f9f9;        /* background/navigation_menu_fill */
   --editor-icon-bg: #f8f8f8;     /* background/unaccented_background-color */
   --pale-border: #e5e7eb;        /* border/pale_border-color */
-  --info-border: #7b62f8;        /* border/info_border-color */
-  --info-border-soft: rgba(123, 98, 248, .6);
-  --info-hover-border: #3a14f5;  /* border/info_hover_border-color */
+  /* цвета info — токены ui-kit (tokens.css) */
+  --info-border: var(--border-info_border-color);
+  --info-border-soft: color-mix(in srgb, var(--border-info_border-color) 60%, transparent);
+  --info-hover-border: var(--border-info_hover_border-color);
 
   /* правая панель */
   --rp-hover: #f9f9f9;          /* background/navigation_hover_background-color */
@@ -1216,11 +1217,21 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .sme-card.is-multi { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
 /* перетаскивание виджета: он едет за курсором поверх остальных, линия — куда встанет; тулбар и плюсы на это время скрыты */
 .sme-card { position: relative; }
-.sme-card.is-dragging .sme-w { cursor: grabbing; }
-.sme-card.is-dragging .sme-w.is-dragged { z-index: 4; background: var(--editor-card); border-color: var(--info-border); box-shadow: 0 4px 12px rgba(0, 0, 0, .12); }
 .sme-card.is-dragging :is(.sme-tb, .sme-mk) { display: none !important; }
-.sme-card.is-dragging .sme-w { transition: transform .15s; }
-.sme-card.is-dragging .sme-w.is-dragged { transition: none; }
+/* перетаскивание (спецификация D&D, локальный виджет): исходный виджет — 40%, экземпляр за курсором — 75%;
+   место вставки — линия @info_border-color 60%, 4px; блок для вставки — пунктир 1px снаружи, штрих 6 / пробел 3, @info_border-color 60% */
+body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
+.sme-card.is-dragging .sme-w { border-color: transparent; }
+.sme-card.is-dragging .sme-w.is-ghost { opacity: .4; }
+.sme-card .sme-w.sme-w--copy { position: absolute; z-index: 5; pointer-events: none; opacity: .75; background: var(--editor-card); border-color: transparent; }
+.sme-drop { position: absolute; z-index: 4; height: 4px; border-radius: 2px; background: var(--info-border-soft); pointer-events: none; }
+/* пунктир — маской из SVG (у border: dashed штрих и пробел не задаются), цвет — из токена */
+/* вложение: пункт, в который ляжет виджет, — тем же пунктиром */
+.sme-list.is-drop-target::after, .sme-card.is-dragging .sme-w.is-nest-target::after {
+  content: ""; position: absolute; inset: -2px; z-index: 3; pointer-events: none; background: var(--info-border-soft);
+  --dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Crect x='.5' y='.5' width='calc(100%25 - 1px)' height='calc(100%25 - 1px)' rx='3' fill='none' stroke='%23000' stroke-dasharray='6 3'/%3E%3C/svg%3E");
+  -webkit-mask: var(--dash); mask: var(--dash);
+}
 .sme-w {
   position: relative; height: 39px; display: flex; align-items: center; padding: 0 9px 0 10px;
   border: 1px solid transparent; border-radius: 2px; cursor: default;
@@ -1750,6 +1761,10 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .iw-icon .acc-item__photo { width: 24px; height: 24px; border-radius: 50%; }
 .iw-icon:not([hidden]) + .iw-title { margin-left: 6px; }
 .iw-blocks { display: flex; flex-direction: column; gap: 4px; }
+/* у пункта подменю — без разбивки на блоки: одна белая карточка, между бывшими блоками 8, как между строками */
+.item-win.is-sub .iw-blocks { gap: 0; background: #fff; border-radius: 8px; }
+.item-win.is-sub .iw-blocks > .set-win__body { background: none; }
+.item-win.is-sub .iw-blocks > .set-win__body + .set-win__body { padding-top: 0; }
 /* подписи — колонкой по самой длинной, 8 до редакторов; строки 24, между строками 8 */
 .iw-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
 .set-win__body.iw-grid { display: grid; }

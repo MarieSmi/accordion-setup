@@ -848,11 +848,20 @@
           </div>
         </div>
         <div class="iw-blocks">
+          <!-- пункт аккордеона (Figma 9eLwMJLQCwT0xHKviN2j1P 18626:20855): доступ по ролям — как у вкладки, ID страницы;
+               «Отображение на панели» — названия пункта. Доступ и ID — и у пункта подменю, первым блоком -->
+          <div class="set-win__body" data-row="access">
+            <div class="tw-access"><span class="mw-link">Доступна всем пользователям</span></div>
+            <div class="iw-grid">
+              <span class="iw-name">ID-страницы</span>
+              <input class="iw-input" type="text" id="iwPageId" spellcheck="false" autocomplete="off">
+            </div>
+          </div>
           <div class="set-win__body iw-grid" data-row="main">
             <span class="iw-name" data-row="level">Вложенность</span>
             <button class="mw-link iw-link" type="button" id="iwLevel" data-row="level"></button>
-            <span class="iw-name">По клику</span>
-            <div class="iw-field">
+            <span class="iw-name" data-row="click">По клику</span>
+            <div class="iw-field" data-row="click">
               <span>Открыть</span><span class="iw-field__sep"></span><span class="iw-field__page" id="iwPage"></span>
               <span class="ico iw-field__x">&#xE66C;</span>
               <span class="ico iw-field__menu">&#xEA90;</span>
@@ -872,15 +881,6 @@
               </div>
             </div>
             <button class="iw-check" type="button" id="iwPanel" data-row="show"><span class="iw-check__box"></span><span>Открывать панель по клику на счетчик</span></button>
-          </div>
-          <!-- пункт аккордеона (Figma 9eLwMJLQCwT0xHKviN2j1P 18626:20855): доступ по ролям — как у вкладки, ID страницы;
-               «Отображение на панели» — названия пункта. Поля ввода в черновик не попадают -->
-          <div class="set-win__body" data-row="props">
-            <div class="tw-access"><span class="mw-link">Доступна всем пользователям</span></div>
-            <div class="iw-grid">
-              <span class="iw-name">ID-страницы</span>
-              <input class="iw-input" type="text" id="iwPageId" spellcheck="false" autocomplete="off">
-            </div>
           </div>
           <div class="set-win__body iw-fill" data-row="props">
             <div class="iw-fill__title">Отображение на панели</div>

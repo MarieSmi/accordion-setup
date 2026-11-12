@@ -82,7 +82,7 @@
 
   // Исходный вид разделов — к нему возвращает ↺ в редакторе подменю.
   const PRISTINE = Object.fromEntries(SECTIONS.map((s) => [s.id, {
-    title: s.title, short: s.short, icon: null, head: s.submenu.headLabel ? null : s.submenu.head ?? s.title, headRight: s.submenu.headRight ?? null, showHead: true, cols: s.submenu.cols.map((c) => c.slice()),
+    title: s.title, short: s.short, icon: null, head: s.submenu.headLabel ? null : s.submenu.head ?? s.title, headRight: s.submenu.headRight ?? null, headPageId: s.submenu.headPageId ?? null, showHead: true, cols: s.submenu.cols.map((c) => c.slice()),
   }]));
 
   // Все разделы по id — и исходные, и добавленные «+» шапки аккордеона в «Общем демо» (отмена / повтор возвращает их в список).
@@ -1241,7 +1241,7 @@
   let iw = null; // окно настроек пункта: { key, title, level, pinned, cmd, show, panel, side, nums, start }
 
   const cloneDraft = (d) => ({ ...d, cols: d.cols.map((c) => c.slice()) });
-  const draftKey = (d) => JSON.stringify([d.title, d.icon, d.head, d.headRight ?? null, d.showHead, d.cols]);
+  const draftKey = (d) => JSON.stringify([d.title, d.icon, d.head, d.headRight ?? null, d.headPageId ?? null, d.showHead, d.cols]);
 
   function editorIconHTML(sec, icon) {
     if (icon) return customGlyph(icon);
@@ -1260,7 +1260,7 @@
     setPanelOpen(false);
     const sub = aeIt?.sub ?? {
       head: sec.submenu.headLabel ? null : sec.submenu.head ?? sec.title,
-      headRight: sec.submenu.headRight ?? null, showHead: !sec.submenu.noHead, cols: sec.submenu.cols,
+      headRight: sec.submenu.headRight ?? null, headPageId: sec.submenu.headPageId ?? null, showHead: !sec.submenu.noHead, cols: sec.submenu.cols,
     };
     const draft = {
       title: aeIt?.title ?? sec.title, icon: aeIt ? aeIt.icon : sec.customIcon ?? null,
@@ -1350,6 +1350,14 @@
         openPlusMenu($('.sme-w.is-selected .sme-tb__btn--replace', smeCard) ?? swap, key);
       });
     }
+    // ⚙ — окно настроек пункта (у заголовка и пунктов, не у пустой колонки); повторный клик закрывает окно
+    if (itemSettingsOn() && !ed.selected.startsWith('col:')) {
+      btn('sme-tb__btn--gear' + (iw && !iw.ae && iw.key === ed.selected ? ' is-active' : ''), ico('&#xE75D;'), 'Настроить').addEventListener('click', () => {
+        if (itemEdit) stopItemEdit(true);
+        if (iw && !iw.ae && iw.key === ed.selected) closeItemWin();
+        else openItemWin(ed.selected);
+      });
+    }
     btn('sme-tb__btn--del', ico('&#xEB72;'), 'Удалить').addEventListener('click', () => { if (itemEdit) stopItemEdit(true); deleteSelected(); });
     const more = btn('sme-tb__btn--more', ico('&#xEAB4;'), 'Ещё');
     more.addEventListener('click', () => {
@@ -1375,7 +1383,7 @@
     const isCol = key.startsWith('col:');
     const show = (sel, on) => { $(sel, smeMore).style.display = on ? '' : 'none'; };
     show('[data-act="replace"]', !isCol);
-    show('[data-act="settings"]', false); // «Настроить» пока скрыто
+    show('[data-act="settings"]', !isCol && itemSettingsOn()); // окно настроек пункта, как ⚙ тулбара
     show('.acc-more__move', !isCol && key !== 'head');
     smeMore.hidden = false;
     btnMore.classList.add('is-active');
@@ -1405,7 +1413,7 @@
     const col = ed.draft.cols[ci];
     const j = ii + step;
     if (j < 0 || j >= col.length || col[ii].pinned || col[j].pinned) return;
-    moveWidget(key, { ci, at: step < 0 ? j : j + 1 });
+    moveWidget(key, { ci, at: step < 0 ? j : j + 1 }, true);
   }
 
   // Повторный клик по выделенному виджету (или двойной клик по тексту) — переименование на месте: каретка там, куда кликнули
@@ -1584,9 +1592,9 @@
     // Открыт из редактора аккордеона: одним шагом в его черновик, применится (или отменится) вместе с ним
     if (ae) {
       const changed = draftKey(draft) !== draftKey(ed.hist[0]);
-      const { title, icon, head, headRight, showHead, cols } = draft;
+      const { title, icon, head, headRight, headPageId, showHead, cols } = draft;
       closeEditor();
-      if (changed) aeCommit(ae.draft.map((it) => (it.id === sec.id ? { ...it, title, icon, sub: { head, headRight, showHead, cols } } : it)), sec.id);
+      if (changed) aeCommit(ae.draft.map((it) => (it.id === sec.id ? { ...it, title, icon, sub: { head, headRight, headPageId, showHead, cols } } : it)), sec.id);
       return;
     }
     const pristine = PRISTINE[sec.id];
@@ -1602,7 +1610,7 @@
   // после удалений ключ «колонка:строка» мог сдвинуться.
   function applySubmenu(sec, d) {
     const current = state.page.section === sec.id && state.page.item != null ? subItem(sec, state.page.item) : null;
-    if (d.head != null) { sec.submenu.head = d.head; sec.submenu.noHead = !d.showHead; sec.submenu.headRight = d.headRight ?? undefined; }
+    if (d.head != null) { sec.submenu.head = d.head; sec.submenu.noHead = !d.showHead; sec.submenu.headRight = d.headRight ?? undefined; sec.submenu.headPageId = d.headPageId ?? undefined; }
     sec.submenu.cols = d.cols.map((c) => c.slice());
     if (current) {
       let key = null;
@@ -1710,34 +1718,41 @@
     smeAskClose();
   });
 
-  // Перетаскивание виджета (как у пунктов аккордеона): нажатие и сдвиг больше 4px — виджет едет за курсором, остальные
-  // расступаются там, куда он встанет (в любую колонку, под заголовок подменю); отпускание ставит его туда одним шагом
-  // истории, виджет остаётся выделен. Без сдвига — клик: по уже выделенному — каретка в тексте. Заголовок не перетаскивается.
+  // Перетаскивание виджета: нажатие и сдвиг больше 4px — виджет остаётся на месте бледным, за курсором едет его копия,
+  // остальные стоят на месте; место вставки — линия между виджетами (в любую колонку, под заголовок подменю). Отпускание
+  // ставит виджет туда одним шагом истории, виджет остаётся выделен. Без сдвига — клик: по уже выделенному — каретка в тексте.
+  // Вложение: курсор над серединой пункта 1-го уровня (или заголовка подменю) — тот обводится пунктиром, отпускание кладёт
+  // виджет в него (2-й уровень, в конец его вложенных). Пункт 1-го уровня едет вместе со своими вложенными.
+  // Вставка линией: перед вложенным пунктом — тоже вложенный, иначе — 1-й уровень. Заголовок не перетаскивается.
+  const kidsOf = (col, i) => { let n = 0; if (col[i].level !== 2) while (col[i + 1 + n]?.level === 2) n++; return n; };
   function smeDrag(e, key, again) {
     const x0 = e.clientX, y0 = e.clientY;
     const [fc, fi] = key.split(':').map(Number);
-    let w = null, drop = null, slots = null, step = 0;
+    let w = null, copy = null, line = null, drop = null, slots = null, kids = 0;
     const move = (ev) => {
-      const dx = (ev.clientX - x0) / scale, dy = (ev.clientY - y0) / scale;
       if (!w) {
-        if (key === 'head' || Math.hypot(dx, dy) < 4) return;
+        if (key === 'head' || Math.hypot(ev.clientX - x0, ev.clientY - y0) / scale < 4) return;
         w = $(`.sme-w[data-key="${key}"]`, smeCard);
         if (!w) return;
-        slots = dragSlots(w);
-        // шаг — высота виджета с промежутком до соседа
-        const sib = w.nextElementSibling?.classList.contains('sme-w') ? w.nextElementSibling : null;
-        step = sib ? sib.offsetTop - w.offsetTop : w.offsetHeight + 8;
+        kids = kidsOf(ed.draft.cols[fc], fi);
+        const block = [w, ...Array.from({ length: kids }, (_, k) => $(`.sme-w[data-key="${fc}:${fi + 1 + k}"]`, smeCard))];
+        slots = dragSlots(block);
         smeCard.classList.add('is-dragging');
-        w.classList.add('is-dragged');
+        for (const b of block) b.classList.add('is-ghost');
+        copy = w.cloneNode(true);
+        for (const n of copy.querySelectorAll('.sme-tb, .sme-mk')) n.remove();
+        copy.className = 'sme-w sme-w--copy' + (w.classList.contains('sme-w--sub') ? ' sme-w--sub' : '');
+        copy.style.width = w.offsetWidth + 'px';
+        line = el('div', 'sme-drop');
+        smeCard.append(copy);
+        document.body.classList.add('is-sme-dragging');
       }
-      w.style.transform = `translate(${dx}px, ${dy}px)`;
-      drop = dropAt(slots, ev.clientX, slots.mid + (ev.clientY - y0));
-      for (const x of smeCard.querySelectorAll('.sme-w')) {
-        if (x === w || x.dataset.key === 'head') continue;
-        const [c, i] = x.dataset.key.split(':').map(Number);
-        const shift = (c === fc && i > fi ? -step : 0) + (c === drop.ci && i >= drop.at ? step : 0);
-        x.style.transform = shift ? `translateY(${shift}px)` : '';
-      }
+      // копия — правее и ниже курсора
+      const c = smeCard.getBoundingClientRect();
+      copy.style.left = (ev.clientX - c.left) / scale + 12 + 'px';
+      copy.style.top = (ev.clientY - c.top) / scale + 8 + 'px';
+      drop = dropAt(slots, ev.clientX, ev.clientY);
+      showDropLine(line, drop, fc, fi, kids);
     };
     const up = () => {
       document.removeEventListener('mousemove', move);
@@ -1746,44 +1761,101 @@
         if (again) startItemEdit($(`.sme-w[data-key="${key}"]`, smeCard), x0, y0);
         return;
       }
+      copy.remove();
+      line.remove();
+      for (const l of smeCard.querySelectorAll('.is-drop-target, .is-nest-target')) l.classList.remove('is-drop-target', 'is-nest-target');
+      document.body.classList.remove('is-sme-dragging');
       smeCard.classList.remove('is-dragging');
       moveWidget(key, drop);
     };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
   }
-  // Положения колонок и середин виджетов до сдвигов — по ним считается место, пока виджеты расступаются
-  function dragSlots(dragged) {
-    const r = dragged.getBoundingClientRect();
-    const lists = [...smeCard.children].filter((l) => l.classList.contains('sme-list')).map((l) => {
-      const lr = l.getBoundingClientRect();
-      const ws = [...l.querySelectorAll(':scope > .sme-w')].filter((x) => x !== dragged && x.dataset.key !== 'head')
-        .map((x) => { const xr = x.getBoundingClientRect(); return { at: +x.dataset.key.split(':')[1], mid: xr.top + xr.height / 2 }; });
-      return { left: lr.left, right: lr.right, ws };
+  // Линия вставки: на границе виджетов колонки, куда встанет перетаскиваемый; там, где он и так стоит, линии нет.
+  // При вложении линии нет — пунктиром обведён пункт, в который ляжет виджет.
+  function showDropLine(line, { ci, at, nest }, fc, fi, kids) {
+    const lists = [...smeCard.children].filter((l) => l.classList.contains('sme-list'));
+    lists.forEach((l, i) => l.classList.toggle('is-drop-target', i === ci)); // блок для вставки — пунктиром
+    for (const x of smeCard.querySelectorAll('.sme-w')) x.classList.toggle('is-nest-target', x.dataset.key === nest);
+    if (nest) { line.remove(); return; }
+    const col = ed.draft.cols[ci];
+    const pin = col.findIndex((x) => x.pinned);
+    if (pin >= 0 && !ed.draft.cols[fc][fi].pinned) at = Math.min(at, pin); // закреплённые внизу остаются последними
+    if (ci === fc && (at === fi || at === fi + kids + 1)) { line.remove(); return; }
+    const list = lists[ci];
+    const ws = [...list.querySelectorAll(':scope > .sme-w')];
+    const next = at < col.length ? $(`.sme-w[data-key="${ci}:${at}"]`, list) : null;
+    const prev = next ? null : ws[ws.length - 1];
+    const ref = next ?? prev ?? ws[0];
+    const y = next ? next.offsetTop : prev ? prev.offsetTop + prev.offsetHeight : 6;
+    Object.assign(line.style, {
+      top: y - 2 + 'px',
+      left: (ref ? ref.offsetLeft : 6) + 8 + 'px',
+      width: (ref ? ref.offsetWidth : list.clientWidth - 12) - 16 + 'px',
     });
-    return { lists, mid: r.top + r.height / 2 };
+    if (line.parentNode !== list) list.append(line);
   }
-  // Куда встанет виджет: колонка под курсором (или ближайшая) и место по середине перетаскиваемого виджета
+  // Положения колонок и виджетов на начало перетаскивания — по ним считается место вставки и вложение.
+  // block — перетаскиваемый виджет с его вложенными: ни линии, ни вложения внутрь себя.
+  function dragSlots(block) {
+    const lists = [...smeCard.children].filter((l) => l.classList.contains('sme-list')).map((l, ci) => {
+      const lr = l.getBoundingClientRect();
+      const ws = [], targets = [];
+      for (const x of l.querySelectorAll(':scope > .sme-w')) {
+        if (block.includes(x)) continue;
+        const xr = x.getBoundingClientRect();
+        const head = x.dataset.key === 'head';
+        const it = head ? null : ed.draft.cols[ci][+x.dataset.key.split(':')[1]];
+        if (!head) ws.push({ at: +x.dataset.key.split(':')[1], mid: xr.top + xr.height / 2 });
+        if (head || (it.level !== 2 && !it.pinned)) targets.push({ key: x.dataset.key, top: xr.top, bottom: xr.bottom });
+      }
+      return { left: lr.left, right: lr.right, ws, targets };
+    });
+    return { lists };
+  }
+  // Куда встанет виджет: колонка под курсором (или ближайшая); курсор над серединой пункта 1-го уровня — вложение в него,
+  // иначе место по курсору между виджетами
   function dropAt({ lists }, x, y) {
     const dist = (l) => (x < l.left ? l.left - x : x > l.right ? x - l.right : 0);
     const ci = lists.indexOf(lists.reduce((a, b) => (dist(b) < dist(a) ? b : a)));
-    const next = lists[ci].ws.find((s) => y < s.mid);
+    const l = lists[ci];
+    if (!dist(l)) {
+      const t = l.targets.find((s) => { const q = (s.bottom - s.top) / 4; return y > s.top + q && y < s.bottom - q; });
+      if (t) return { ci, nest: t.key };
+    }
+    const next = l.ws.find((s) => y < s.mid);
     return { ci, at: next ? next.at : ed.draft.cols[ci].length };
   }
-  function moveWidget(key, { ci, at }) {
+  // step — «Вверх / Вниз» из меню «⋯»: один виджет на соседнее место, уровень не меняется
+  function moveWidget(key, { ci, at, nest }, step = false) {
     const [fc, fi] = key.split(':').map(Number);
+    const kids = step ? 0 : kidsOf(ed.draft.cols[fc], fi);
+    if (!nest && fc === ci && (at === fi || at === fi + kids + 1)) { renderEditor(); return; } // на своё же место
     const draft = cloneDraft(ed.draft);
-    const [it] = draft.cols[fc].splice(fi, 1);
-    let to = fc === ci && fi < at ? at - 1 : at;
-    // закреплённые внизу остаются последними
-    const pin = draft.cols[ci].findIndex((x) => x.pinned);
-    if (pin >= 0 && !it.pinned) to = Math.min(to, pin);
-    draft.cols[ci].splice(to, 0, it);
-    let col = ci;
-    if (fc > 0 && !draft.cols[fc].length) { draft.cols.splice(fc, 1); if (ci > fc) col--; } // вторая колонка без виджетов пропадает
+    let block = draft.cols[fc].splice(fi, kids + 1);
+    const col = draft.cols[ci];
+    const toSub = () => { block = block.map((x) => (x.level === 2 ? x : { ...x, level: 2 })); };
+    let to;
+    if (nest) {
+      // в конец вложенных пункта (у заголовка — вложенные в начале первой колонки)
+      const ti = nest === 'head' ? -1 : +nest.split(':')[1];
+      to = (fc === ci && ti > fi ? ti - kids - 1 : ti) + 1;
+      while (col[to]?.level === 2 && !col[to].pinned) to++;
+      toSub();
+    } else {
+      to = fc === ci && fi < at ? at - kids - 1 : at;
+      // закреплённые внизу остаются последними
+      const pin = col.findIndex((x) => x.pinned);
+      if (pin >= 0 && !block[0].pinned) to = Math.min(to, pin);
+      if (step) { /* уровень прежний */ } else if (col[to]?.level === 2) toSub();
+      else if (block[0].level === 2) block[0] = { ...block[0], level: 1 };
+    }
+    col.splice(to, 0, ...block);
+    let c = ci;
+    if (fc > 0 && !draft.cols[fc].length) { draft.cols.splice(fc, 1); if (ci > fc) c--; } // вторая колонка без виджетов пропадает
     if (draftKey(draft) === draftKey(ed.draft)) { renderEditor(); return; }
     commit(draft);
-    ed.selected = `${col}:${to}`;
+    ed.selected = `${c}:${to}`;
     renderEditor();
   }
   smeCard.addEventListener('keydown', (e) => {
@@ -2922,6 +2994,11 @@
   }
   const iwState = () => JSON.stringify([iw.title, iw.level, iw.pinned, iwRight(), iw.icon ?? null, iw.props ?? null]);
 
+  function iwPageDef(key) {
+    if (key === 'head') return ed.sec.id;
+    const [ci, ii] = key.split(':').map(Number);
+    return `${ed.sec.id}-${ed.draft.cols.slice(0, ci).reduce((n, c) => n + c.length, 0) + ii + 1}`;
+  }
   function openItemWin(key) {
     closeOtherWindows();
     if (!plusMenu.hidden) closePlusMenu(); // два меню / окна сразу не открыты
@@ -2930,7 +3007,9 @@
     const [ci, ii] = head ? [] : key.split(':').map(Number);
     const it = head ? null : d.cols[ci][ii];
     const right = head ? d.headRight : it.right;
-    iw = { key, title: head ? d.head : it.title, level: it?.level ?? 1, pinned: !!it?.pinned, ...iwFromRight(right) };
+    // ID страницы: у заголовка по умолчанию — ID раздела, у пункта — ID раздела и номер пункта
+    const props = { pageId: (head ? d.headPageId : it.pageId) ?? iwPageDef(key) };
+    iw = { key, title: head ? d.head : it.title, level: it?.level ?? 1, pinned: !!it?.pinned, props, ...iwFromRight(right) };
     iw.start = iwState();
     iwTitle.textContent = iw.title;
     iwTitle.contentEditable = 'plaintext-only';
@@ -2980,9 +3059,11 @@
   function renderItemWin() {
     const acc = !!iw.ae; // пункт аккордеона в его редакторе
     const head = !acc && iw.key === 'head';
-    // «Вложенность», «По клику» и «Дополнительно» — у пункта подменю
-    const rows = { main: !acc, level: !head && !acc, fill: !acc, show: iw.cmd === 'count', side: head && iw.cmd === 'add', props: acc };
+    // у пункта подменю — только доступ и ID; «Вложенность», «По клику» и «Дополнительно» пока убраны
+    // (уровень и элемент справа у пункта остаются, какие были)
+    const rows = { main: false, level: false, click: false, fill: false, show: false, side: false, access: true, props: acc };
     iwIcon.hidden = !acc;
+    itemWin.classList.toggle('is-sub', !acc); // у пункта подменю блоки — одной карточкой
     for (const n of itemWin.querySelectorAll('[data-row]')) n.hidden = !rows[n.dataset.row];
     $('#iwLevel').textContent = IW_LEVELS.find(([v]) => v === iw.level)[1];
     $('#iwPage').textContent = iw.title;
@@ -2991,6 +3072,7 @@
     $('#iwPanel').classList.toggle('is-on', iw.panel);
     for (const b of $('#iwSide').children) b.classList.toggle('is-on', b.dataset.side === iw.side);
     $('#iwReset').disabled = iwState() === iw.start;
+    if ($('#iwPageId') !== document.activeElement) $('#iwPageId').value = iw.props.pageId;
     // настройки сразу видны на виджете (название, уровень, элемент справа); в черновик — по ✓, ✕ возвращает виджет как был
     if (acc) {
       const icon = iconHTML({ ...ALL_SECTIONS[iw.key], customIcon: iw.icon });
@@ -3026,7 +3108,9 @@
     const right = iwRight();
     const draft = cloneDraft(ed.draft);
     let selKey = key;
-    if (key === 'head') Object.assign(draft, { head: title, headRight: right });
+    const pageId = iw.props.pageId.replace(/\s+/g, ' ').trim();
+    const ownId = pageId && pageId !== iwPageDef(key) ? pageId : null; // в черновике — только отличный от ID по умолчанию
+    if (key === 'head') Object.assign(draft, { head: title, headRight: right, headPageId: ownId });
     else {
       const [ci, ii] = key.split(':').map(Number);
       const col = draft.cols[ci];
@@ -3034,6 +3118,8 @@
       const it = { ...col[ii], title, level: iw.level };
       delete it.right;
       delete it.pinned;
+      delete it.pageId;
+      if (ownId) it.pageId = ownId;
       if (right) it.right = right;
       if (iw.pinned) it.pinned = true;
       col[ii] = it;
@@ -3105,7 +3191,7 @@
   $('#iwReset').addEventListener('click', () => {
     const [title, level, pinned, right, icon, props] = JSON.parse(iw.start);
     iwTitle.textContent = title;
-    iwSet({ title, level, pinned, ...iwFromRight(right), nums: iw.nums, ...(iw.ae && { icon, props }) });
+    iwSet({ title, level, pinned, ...iwFromRight(right), nums: iw.nums, props, ...(iw.ae && { icon }) });
   });
   $('.set-win__head', itemWin).addEventListener('mousedown', (e) => startDrag(e, itemWin));
   // Название правится на месте: Enter — закончить, Esc — вернуть как было при открытии окна; пустое — тоже возвращается.
@@ -3852,7 +3938,7 @@
     logo, align: state.align, informers: state.informers, themeId, userTheme,
     tabs, tabsAdded: stage.classList.contains('tabs-added'),
     sections: SECTIONS.map((s) => ({ id: s.id, title: s.title, short: s.short, customIcon: s.customIcon ?? null, pinned: !!s.pinned,
-      head: s.submenu.head ?? null, headRight: s.submenu.headRight ?? null, noHead: !!s.submenu.noHead, cols: s.submenu.cols })),
+      head: s.submenu.head ?? null, headRight: s.submenu.headRight ?? null, headPageId: s.submenu.headPageId ?? null, noHead: !!s.submenu.noHead, cols: s.submenu.cols })),
   });
 
   function renderHistory() {
@@ -3914,7 +4000,7 @@
     SECTIONS.forEach((sec, i) => {
       const d = s.sections[i];
       Object.assign(sec, { title: d.title, short: d.short, customIcon: d.customIcon, pinned: d.pinned });
-      Object.assign(sec.submenu, { head: d.head ?? undefined, headRight: d.headRight ?? undefined, noHead: d.noHead, cols: d.cols });
+      Object.assign(sec.submenu, { head: d.head ?? undefined, headRight: d.headRight ?? undefined, headPageId: d.headPageId ?? undefined, noHead: d.noHead, cols: d.cols });
     });
     const { section, item } = state.page;
     if (section && item != null && !subItem(SECTIONS.find((x) => x.id === section), item)) state.page.item = null;
