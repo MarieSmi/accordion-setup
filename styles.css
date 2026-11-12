@@ -864,7 +864,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 .acc-more__arrow .ico { color: #656c87; padding-bottom: 1px; }
 /* «Переместить» — только ховер: подменю справа от пункта через 8, первый пункт на уровне «Переместить» (Figma 19404:32415) */
 .acc-more__sub {
-  position: absolute; left: calc(100% + 8px); top: -12px; width: 194px; display: none;
+  position: absolute; left: calc(100% + 8px); top: -12px; min-width: 194px; width: max-content; display: none; /* по ширине пунктов: «В другой раздел» не обрезается */
   flex-direction: column; gap: 6px; padding: 12px 8px; background: #fff; border-radius: 8px; box-shadow: var(--win-shadow);
 }
 .acc-more__sub::before { content: ""; position: absolute; left: -8px; top: 0; bottom: 0; width: 8px; } /* мостик: ховер не теряется по пути */
@@ -1226,8 +1226,10 @@ body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
 .sme-card .sme-w.sme-w--copy { position: absolute; z-index: 5; pointer-events: none; opacity: .75; background: var(--editor-card); border-color: transparent; }
 .sme-drop { position: absolute; z-index: 4; height: 4px; border-radius: 2px; background: var(--info-border-soft); pointer-events: none; }
 /* пунктир — маской из SVG (у border: dashed штрих и пробел не задаются), цвет — из токена */
-/* вложение: пункт, в который ляжет виджет, — тем же пунктиром */
-.sme-list.is-drop-target::after, .sme-card.is-dragging .sme-w.is-nest-target::after {
+/* при перетаскивании колонка (родительский блок) пунктиром не выделяется; пунктир — только у пункта, в который ляжет виджет */
+.sme-card.is-dragging .sme-list.has-selected::before { display: none; }
+.sme-card.is-dragging .sme-list.is-empty > .sme-empty { position: relative; }
+.sme-card.is-dragging :is(.sme-w, .sme-empty).is-nest-target::after, .ae-list.is-dragging .ae-w.is-nest-target::after {
   content: ""; position: absolute; inset: -2px; z-index: 3; pointer-events: none; background: var(--info-border-soft);
   --dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Crect x='.5' y='.5' width='calc(100%25 - 1px)' height='calc(100%25 - 1px)' rx='3' fill='none' stroke='%23000' stroke-dasharray='6 3'/%3E%3C/svg%3E");
   -webkit-mask: var(--dash); mask: var(--dash);
@@ -1238,6 +1240,11 @@ body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
   font-size: 16px; line-height: 24px; letter-spacing: -.2256px; color: var(--text); white-space: nowrap;
 }
 .sme-w--sub { padding-left: 20px; }
+/* стрелка у пункта с вложенными (cbuc-icons ⌄ / ›): кликабельна, сворачивает вложенные; свёрнутые вложенные скрыты */
+.sme-w__fold { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-left: 4px; border-radius: 2px; cursor: pointer; flex: none; }
+.sme-w__fold .ico { color: var(--label); }
+.sme-w__fold:hover .ico { color: var(--text); }
+.sme-w.is-folded { display: none; }
 
 /* ховер виджета; выделенный — рамка и плюсы сверху и снизу */
 .sme-w:hover { border-color: var(--info-border-soft); }
@@ -1262,6 +1269,8 @@ body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
 .sme-list.is-empty > .sme-empty { flex: none; height: 39px; padding: 0; border: 1px solid transparent; border-radius: 2px; }
 .sme-list.is-empty > .sme-empty:hover { border-color: var(--info-border-soft); }
 .sme-list.is-empty.is-selected > .sme-empty { border-color: var(--info-border); }
+/* при перетаскивании у ячейки только пунктир цели — без рамки ховера и выделения */
+.sme-card.is-dragging .sme-list.is-empty > .sme-empty { border-color: transparent; }
 
 /* плюсы (Figma rHabzni5OI5D4fxBLQdj2m 399:49380): кружок 8px → при наведении 16px с «+», при нажатии темнее */
 .sme-mk { position: absolute; z-index: 2; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; cursor: pointer; }
@@ -1278,6 +1287,18 @@ body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
 .sme-w.is-selected > .sme-mk, .sme-mk.is-active { display: flex; }
 /* в реестре плюсы сверху и снизу — и по ховеру виджета, не только у выделенного */
 .sme-card.is-registry .sme-w:hover > .sme-mk { display: flex; }
+/* Реестр («Общее демо», «Подменю → Редактор»): новая колонка — плюсы по краям карточки (без выделения карточки).
+   При перетаскивании за левый / правый край карточки — та же рамка и вертикальная линия у края (как линия вставки) */
+/* плюсы — по центру левого и правого края; наведение на карточку обводит её рамкой (без выделения).
+   Подсветка одна: наведение на виджет снимает рамку и плюсы с карточки */
+.sme-card.has-col-mk:hover:not(:has(.sme-w:hover)) > .sme-mk--col { display: flex; }
+.sme-card.has-col-mk:is(:hover:not(:has(.sme-w:hover)), :has(> .sme-mk--col.is-active)), .sme-card.is-col-drop { box-shadow: 0 0 0 1px var(--info-border-soft); }
+.sme-card.is-dragging:not(.is-col-drop) { box-shadow: none; }
+.sme-mk--col-left { left: -10px; top: 50%; transform: translateY(-50%); }
+.sme-mk--col-right { right: -10px; top: 50%; transform: translateY(-50%); }
+.sme-drop--col { width: 4px; height: auto; top: 6px; bottom: 6px; }
+.sme-drop--left { left: -8px; }
+.sme-drop--right { right: -8px; }
 
 /* ---------- Редактор аккордеона: окно редактора подменю, внутри — аккордеон в его цветах ---------- */
 .acc-editor { width: 300px; }
@@ -1309,8 +1330,10 @@ body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
 .ae-w .acc-item__title[contenteditable="plaintext-only"] { cursor: text; outline: none; text-overflow: clip; caret-color: var(--acc-text); }
 /* перетаскивание мышью: пункт едет за курсором, остальные расступаются */
 .ae-w:hover > .sme-mk { display: flex; } /* плюсы пункта — и по наведению */
-.ae-list.is-dragging .ae-w { transition: transform .15s; }
-.ae-list.is-dragging .ae-w.is-dragged { transition: none; z-index: 4; background: var(--acc-item-hover); border-color: var(--info-border); }
+/* перетаскивание — как в редакторе подменю: исходный пункт 40%, копия за курсором 75% без обводки, линия вставки — .sme-drop */
+.ae-list.is-dragging .ae-w { border-color: transparent; }
+.ae-list.is-dragging .ae-w.is-ghost { opacity: .4; }
+.ae-list .ae-w.sme-w--copy { position: absolute; z-index: 5; pointer-events: none; opacity: .75; margin: 0; background: var(--acc-bg); border-color: transparent; }
 .ae-list.is-dragging :is(.sme-tb, .sme-mk) { display: none !important; }
 /* Режим редактирования — прямо в аккордеоне: окно без шапки, рамки и тени встаёт на аккордеон (место и высоту задаёт JS),
    внизу вместо «Настроить» — «Сохранить» и справа «Отменить», кнопки-ссылки как «Настроить» */

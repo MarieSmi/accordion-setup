@@ -1111,8 +1111,8 @@
 
   // ---------- Меню «⋮» пункта аккордеона (Figma xMQ3ZEN4AUINgwjVoxR8hS 19401:31603) ----------
   // В «Общем демо». Крестик меню — ровно поверх «⋮» (крестик: right −14, top 8, 28×28).
-  // «Настроить подменю» — редактор подменю; «Переименовать» — каретка в названии на месте; «Переместить» — только ховер
-  // (подменю «Вверх / Вниз / В другой раздел» без действий); «Удалить» — пункт уходит (отмена в шапке возвращает).
+  // «Настроить подменю» — редактор подменю; «Переименовать» — каретка в названии на месте; «Переместить» — по ховеру
+  // (подменю: «Вверх» / «Вниз» меняют пункт местами с соседом, «В другой раздел» — только ховер); «Удалить» — пункт уходит (отмена в шапке возвращает).
   // У второй строки (выбранный пункт подменю) то же меню, действия — с этим пунктом подменю.
   const accMore = $('#accMore');
   let am = null; // { id, sub, li }
@@ -1153,7 +1153,30 @@
     if (act === 'edit') openEditor(id);
     else if (act === 'rename') startAccRename(li, id, sub);
     else if (act === 'delete') deleteAccItem(id, sub);
+    else if (act === 'up' || act === 'down') moveAccItem(id, sub, act === 'up' ? -1 : 1);
   });
+
+  // «Переместить → Вверх / Вниз»: пункт меняется местами с соседом (как в редакторах); закреплённый внизу остаётся последним,
+  // у крайнего в эту сторону ничего не происходит. У второй строки — пункт подменю в своей колонке (уровень прежний).
+  function moveAccItem(id, sub, step) {
+    const sec = SECTIONS.find((s) => s.id === id);
+    if (sub) {
+      const [ci, ii] = state.page.item.split(':').map(Number);
+      const col = sec.submenu.cols[ci], j = ii + step;
+      if (j < 0 || j >= col.length || col[ii].pinned || col[j].pinned) return;
+      sec.submenu.cols = sec.submenu.cols.map((c) => c.slice());
+      const c = sec.submenu.cols[ci];
+      [c[ii], c[j]] = [c[j], c[ii]];
+      state.page.item = `${ci}:${j}`;
+      updatePage();
+    } else {
+      const i = SECTIONS.indexOf(sec), j = i + step;
+      if (j < 0 || j >= SECTIONS.length || sec.pinned || SECTIONS[j].pinned) return;
+      [SECTIONS[i], SECTIONS[j]] = [SECTIONS[j], SECTIONS[i]];
+    }
+    renderAccordion();
+    record();
+  }
 
   // Переименование на месте: поле поверх названия, каретка в конце. Enter или уход фокуса — применить, Esc — отменить.
   // Название раздела не меняет заголовок подменю (как в редакторе); у второй строки меняется название пункта подменю.
@@ -1250,6 +1273,11 @@
     return `<span class="acc-glyph">${sec.icon}</span>`;
   }
 
+  // подменю раздела в виде черновика редактора (без названия и иконки)
+  const subDraftOf = (sec) => ({
+    head: sec.submenu.headLabel ? null : sec.submenu.head ?? sec.title,
+    headRight: sec.submenu.headRight ?? null, headPageId: sec.submenu.headPageId ?? null, showHead: !sec.submenu.noHead, cols: sec.submenu.cols,
+  });
   function openEditor(id) {
     // из редактора аккордеона пункт может быть ещё только в его черновике: название, иконка и уже настроенное подменю — оттуда
     const sec = SECTIONS.find((s) => s.id === id) ?? ALL_SECTIONS[id];
@@ -1258,15 +1286,13 @@
     closeOtherWindows();
     cancelLeave();
     setPanelOpen(false);
-    const sub = aeIt?.sub ?? {
-      head: sec.submenu.headLabel ? null : sec.submenu.head ?? sec.title,
-      headRight: sec.submenu.headRight ?? null, headPageId: sec.submenu.headPageId ?? null, showHead: !sec.submenu.noHead, cols: sec.submenu.cols,
-    };
+    const sub = aeIt?.sub ?? subDraftOf(sec);
     const draft = {
       title: aeIt?.title ?? sec.title, icon: aeIt ? aeIt.icon : sec.customIcon ?? null,
       ...sub, cols: sub.cols.map((c) => c.slice()),
     };
-    ed = { sec, draft, hist: [cloneDraft(draft)], at: 0, selected: null, base: PRISTINE[id] }; // base — к чему возвращает «Вернуть исходное»
+    // folded — свёрнутые в редакторе группы (пункт или 'head'): вид редактора, не черновик — в историю не идёт
+    ed = { sec, draft, hist: [cloneDraft(draft)], at: 0, selected: null, base: PRISTINE[id], folded: new Set() }; // base — к чему возвращает «Вернуть исходное»
     smeConfirm.hidden = true;
     renderEditor();
     shield.hidden = false;
@@ -1340,14 +1366,14 @@
       return b;
     };
     const ico = (ch) => `<span class="ico24">${ch}</span>`;
-    // у пустой колонки («col:N») заменять и править текст нечего
-    if (!ed.selected.startsWith('col:')) {
+    // у пустой колонки («col:N») «Заменить» — выбранная страница встаёт в колонку
+    {
       const swap = btn('sme-tb__btn--replace' + (!plusMenu.hidden && plusReplace === ed.selected ? ' is-active' : ''), ico('&#xEBD1;'), 'Заменить');
       swap.addEventListener('click', () => {
         if (!plusMenu.hidden && plusReplace === ed.selected) { closePlusMenu(); return; }
         const key = ed.selected;
         if (itemEdit) stopItemEdit(true); // правка текста применяется, виджеты перерисованы — кнопку находим заново
-        openPlusMenu($('.sme-w.is-selected .sme-tb__btn--replace', smeCard) ?? swap, key);
+        openPlusMenu($('.is-selected .sme-tb__btn--replace', smeCard) ?? swap, key);
       });
     }
     // ⚙ — окно настроек пункта (у заголовка и пунктов, не у пустой колонки); повторный клик закрывает окно
@@ -1382,7 +1408,7 @@
     const key = ed.selected;
     const isCol = key.startsWith('col:');
     const show = (sel, on) => { $(sel, smeMore).style.display = on ? '' : 'none'; };
-    show('[data-act="replace"]', !isCol);
+    show('[data-act="replace"]', true);
     show('[data-act="settings"]', !isCol && itemSettingsOn()); // окно настроек пункта, как ⚙ тулбара
     show('.acc-more__move', !isCol && key !== 'head');
     smeMore.hidden = false;
@@ -1463,24 +1489,45 @@
     const registry = itemSettingsOn();
     smeCard.classList.toggle('is-registry', registry);
     // в реестре плюсы сверху и снизу выделенного виджета открывают меню «+», выбранная страница встаёт на место плюса
-    const mk = (side, ci, at) => {
+    // level — уровень виджета, у которого плюс: новый встаёт на том же уровне
+    const mk = (side, ci, at, level = 1) => {
       const m = el('span', `sme-mk sme-mk--${side}`);
-      if (registry) Object.assign(m.dataset, { col: ci, at });
+      if (registry) Object.assign(m.dataset, { col: ci, at, level });
       return m;
     };
-    const widget = (key, title, sub, right, ci, ii) => {
+    // у пункта с вложенными — стрелка (cbuc-icons: ⌄ E9AA — раскрыт, › E9AB — свёрнут), клик сворачивает / разворачивает вложенные
+    const widget = (key, title, sub, right, ci, ii, kids = 0, it = 'head') => {
       const w = el('div', 'sme-w' + (sub ? ' sme-w--sub' : '') + (key === selected ? ' is-selected' : ''));
       w.dataset.key = key;
-      w.append(el('span', 'sme-w__text', title), mk('top', ci, ii), mk('bottom', ci, key === 'head' ? 0 : ii + 1));
+      const text = el('span', 'sme-w__text', title);
+      // нижний плюс пункта с вложенными — под всей группой: новый пункт того же уровня не забирает чужие вложенные
+      const lvl = sub ? 2 : 1;
+      w.append(text, mk('top', ci, ii, lvl), mk('bottom', ci, (key === 'head' ? 0 : ii + 1) + kids, lvl));
+      let after = text;
+      if (kids) {
+        const open = !ed.folded.has(it);
+        after = el('span', 'sme-w__fold', `<span class="ico">${open ? '&#xE9AA;' : '&#xE9AB;'}</span>`);
+        after.dataset.tip = open ? 'Свернуть' : 'Развернуть';
+        text.after(after);
+      }
       // где есть окно настроек пункта, у виджета виден элемент справа из него
-      if (itemSettingsOn() && right) $('.sme-w__text', w).insertAdjacentHTML('afterend', rightHTML(right));
+      if (itemSettingsOn() && right) after.insertAdjacentHTML('afterend', rightHTML(right));
       if (key === selected) w.append(toolbar());
       return w;
     };
     draft.cols.forEach((col, ci) => {
       const l = el('div', 'sme-list');
-      if (ci === 0 && draft.head != null && draft.showHead) l.append(widget('head', draft.head, false, draft.headRight, ci, 0));
-      col.forEach((it, ii) => l.append(widget(`${ci}:${ii}`, it.title, it.level === 2, it.right, ci, ii)));
+      const head = ci === 0 && draft.head != null && draft.showHead;
+      if (head) l.append(widget('head', draft.head, false, draft.headRight, ci, 0, headKids(col)));
+      // вложенные свёрнутой группы скрыты (в DOM остаются — перетаскиваются вместе с пунктом)
+      let fold = head && ed.folded.has('head');
+      col.forEach((it, ii) => {
+        const sub = it.level === 2;
+        const w = widget(`${ci}:${ii}`, it.title, sub, it.right, ci, ii, sub ? 0 : kidsOf(col, ii), it);
+        if (sub && fold) w.classList.add('is-folded');
+        if (!sub) fold = ed.folded.has(it);
+        l.append(w);
+      });
       l.classList.toggle('has-selected', !!l.querySelector('.sme-w.is-selected'));
       // в реестре пустая колонка («Добавить колонку») — по клику меню «+», страница встаёт в неё; в остальных — плюсы по сторонам списка
       const empty = registry && !l.querySelector('.sme-w');
@@ -1500,6 +1547,17 @@
       stub.setAttribute('aria-label', 'Добавить');
       stub.addEventListener('click', () => smePlus.click());
       smeCard.append(stub);
+    }
+    // Реестр (где есть окно настроек пункта): новая колонка — плюсами по центру левого и правого края карточки (только одна), пока ничего не выделено;
+    // при наведении карточка обводится рамкой, но не выделяется
+    const sides = !selected && smeCard.querySelector('.sme-w') ? newColSides() : null;
+    smeCard.classList.toggle('has-col-mk', !!sides);
+    if (sides) for (const side of ['left', 'right']) {
+      if (!sides[side]) continue;
+      const m = el('span', `sme-mk sme-mk--col sme-mk--col-${side}`);
+      m.dataset.newcol = side;
+      m.dataset.tip = 'Добавить колонку';
+      smeCard.append(m);
     }
     smeUndo.disabled = ed.at === 0;
     smeRedo.disabled = ed.at === ed.hist.length - 1;
@@ -1659,6 +1717,14 @@
   // Клик по виджету выделяет его, клик мимо (в окне или за ним) — снимает выделение.
   editor.addEventListener('mousedown', (e) => {
     if (!ed || e.target.closest('.sme-mk')) return;
+    const fold = e.target.closest('.sme-w__fold');
+    if (fold) {
+      e.preventDefault();
+      const key = fold.closest('.sme-w').dataset.key;
+      if (itemEdit) stopItemEdit(true);
+      toggleFold(key);
+      return;
+    }
     if (itemEdit) {
       if (itemEdit.text.contains(e.target) || e.target.closest('.sme-tb')) return;
       // клик по рамке виджета мимо текста правку не заканчивает: каретка — к ближайшему месту в тексте (мимо — в конец)
@@ -1722,9 +1788,46 @@
   // остальные стоят на месте; место вставки — линия между виджетами (в любую колонку, под заголовок подменю). Отпускание
   // ставит виджет туда одним шагом истории, виджет остаётся выделен. Без сдвига — клик: по уже выделенному — каретка в тексте.
   // Вложение: курсор над серединой пункта 1-го уровня (или заголовка подменю) — тот обводится пунктиром, отпускание кладёт
-  // виджет в него (2-й уровень, в конец его вложенных). Пункт 1-го уровня едет вместе со своими вложенными.
+  // виджет в него (2-й уровень, первым среди его вложенных). Пункт 1-го уровня едет вместе со своими вложенными.
   // Вставка линией: перед вложенным пунктом — тоже вложенный, иначе — 1-й уровень. Заголовок не перетаскивается.
-  const kidsOf = (col, i) => { let n = 0; if (col[i].level !== 2) while (col[i + 1 + n]?.level === 2) n++; return n; };
+  function kidsOf(col, i) { let n = 0; if (col[i].level !== 2) while (col[i + 1 + n]?.level === 2) n++; return n; }
+  // вложенные заголовка подменю — пункты 2-го уровня в начале первой колонки
+  function headKids(col) { let n = 0; while (col[n]?.level === 2) n++; return n; }
+  // Свернуть / развернуть вложенные пункта; выделенный вложенный при сворачивании — выделение на родителя
+  function toggleFold(key) {
+    const head = key === 'head';
+    const [ci, ii] = head ? [0, -1] : key.split(':').map(Number);
+    const col = ed.draft.cols[ci];
+    const id = head ? 'head' : col[ii];
+    if (ed.folded.has(id)) ed.folded.delete(id);
+    else {
+      ed.folded.add(id);
+      const n = head ? headKids(col) : kidsOf(col, ii);
+      const [sc, si] = (ed.selected ?? '').split(':').map(Number);
+      if (sc === ci && si > ii && si <= ii + n) ed.selected = key;
+    }
+    renderEditor();
+  }
+  // Реестр: с какой стороны можно добавить колонку (одну). У старой колонки должно остаться содержимое: заголовок подменю
+  // всегда над первой колонкой и при новой колонке слева переезжает в неё вместе со своими вложенными.
+  // skip — перетаскиваемый блок { at, n }: его в колонке уже нет
+  function newColSides(skip) {
+    const d = ed.draft;
+    if (!itemSettingsOn() || d.cols.length !== 1) return null;
+    const rest = skip ? d.cols[0].filter((_, i) => i < skip.at || i >= skip.at + skip.n) : d.cols[0];
+    const head = d.showHead && d.head != null;
+    const sides = { left: rest.length > (head ? headKids(rest) : 0), right: head || rest.length > 0 };
+    return sides.left || sides.right ? sides : null;
+  }
+  // Новая колонка слева / справа, в её начале — block (первый виджет — 1-й уровень). Возвращает ключ первого виджета блока
+  function addColumnWith(draft, side, block) {
+    block = block.map((x, i) => (i || x.level !== 2 ? x : { ...x, level: 1 }));
+    if (side === 'right') { draft.cols.push(block); return '1:0'; }
+    const col = draft.cols[0];
+    const n = draft.showHead && draft.head != null ? headKids(col) : 0;
+    draft.cols.unshift([...col.splice(0, n), ...block]);
+    return `0:${n}`;
+  }
   function smeDrag(e, key, again) {
     const x0 = e.clientX, y0 = e.clientY;
     const [fc, fi] = key.split(':').map(Number);
@@ -1736,11 +1839,13 @@
         if (!w) return;
         kids = kidsOf(ed.draft.cols[fc], fi);
         const block = [w, ...Array.from({ length: kids }, (_, k) => $(`.sme-w[data-key="${fc}:${fi + 1 + k}"]`, smeCard))];
-        slots = dragSlots(block);
+        slots = { ...dragSlots(block), fc, fi, kids, newCol: newColSides({ at: fi, n: kids + 1 }) };
         smeCard.classList.add('is-dragging');
         for (const b of block) b.classList.add('is-ghost');
         copy = w.cloneNode(true);
         for (const n of copy.querySelectorAll('.sme-tb, .sme-mk')) n.remove();
+        const arrow = $('.sme-w__fold .ico', copy); // у копии пункта с вложенными стрелка свёрнута (›), после отпускания группа раскрыта
+        if (arrow) arrow.innerHTML = '&#xE9AB;';
         copy.className = 'sme-w sme-w--copy' + (w.classList.contains('sme-w--sub') ? ' sme-w--sub' : '');
         copy.style.width = w.offsetWidth + 'px';
         line = el('div', 'sme-drop');
@@ -1763,9 +1868,9 @@
       }
       copy.remove();
       line.remove();
-      for (const l of smeCard.querySelectorAll('.is-drop-target, .is-nest-target')) l.classList.remove('is-drop-target', 'is-nest-target');
+      for (const l of smeCard.querySelectorAll('.is-nest-target')) l.classList.remove('is-nest-target');
       document.body.classList.remove('is-sme-dragging');
-      smeCard.classList.remove('is-dragging');
+      smeCard.classList.remove('is-dragging', 'is-col-drop');
       moveWidget(key, drop);
     };
     document.addEventListener('mousemove', move);
@@ -1773,25 +1878,42 @@
   }
   // Линия вставки: на границе виджетов колонки, куда встанет перетаскиваемый; там, где он и так стоит, линии нет.
   // При вложении линии нет — пунктиром обведён пункт, в который ляжет виджет.
-  function showDropLine(line, { ci, at, nest }, fc, fi, kids) {
+  // Линия там, где виджет встанет 2-м уровнем (внутри группы и в её конце), — с отступом, как текст вложенного пункта.
+  function showDropLine(line, { ci, at, nest, level, newcol }, fc, fi, kids) {
+    // Реестр, курсор левее / правее карточки — новая колонка: карточка обведена, вертикальная линия у её края
+    smeCard.classList.toggle('is-col-drop', !!newcol);
+    line.className = 'sme-drop' + (newcol ? ` sme-drop--col sme-drop--${newcol}` : '');
+    if (newcol) {
+      for (const x of smeCard.querySelectorAll('.is-nest-target')) x.classList.remove('is-nest-target');
+      line.removeAttribute('style');
+      if (line.parentNode !== smeCard) smeCard.append(line);
+      return;
+    }
     const lists = [...smeCard.children].filter((l) => l.classList.contains('sme-list'));
-    lists.forEach((l, i) => l.classList.toggle('is-drop-target', i === ci)); // блок для вставки — пунктиром
-    for (const x of smeCard.querySelectorAll('.sme-w')) x.classList.toggle('is-nest-target', x.dataset.key === nest);
-    if (nest) { line.remove(); return; }
     const col = ed.draft.cols[ci];
+    // пустая колонка — бросают в саму ячейку: она пунктиром, линии нет
+    const cell = !col.length && !nest ? $(':scope > .sme-empty', lists[ci]) : null;
+    for (const x of smeCard.querySelectorAll('.sme-w, .sme-empty')) x.classList.toggle('is-nest-target', x === cell || (!!nest && x.dataset.key === nest));
+    if (nest || cell) { line.remove(); return; }
     const pin = col.findIndex((x) => x.pinned);
     if (pin >= 0 && !ed.draft.cols[fc][fi].pinned) at = Math.min(at, pin); // закреплённые внизу остаются последними
-    if (ci === fc && (at === fi || at === fi + kids + 1)) { line.remove(); return; }
+    const own = (ed.draft.cols[fc][fi].level === 2 ? 2 : 1);
+    if (ci === fc && (at === fi || at === fi + kids + 1) && (!level || level === own)) { line.remove(); return; }
     const list = lists[ci];
-    const ws = [...list.querySelectorAll(':scope > .sme-w')];
+    // линия внутри группы (виджет встанет 2-м уровнем) — с отступом, как текст вложенных
+    let n = at;
+    while (ci === fc && n >= fi && n <= fi + kids) n++;
+    const sub = level ? level === 2 : col[n]?.level === 2 && !col[n].pinned;
+    const indent = sub ? 10 : 0;
+    const ws = [...list.querySelectorAll(':scope > .sme-w:not(.is-folded)')];
     const next = at < col.length ? $(`.sme-w[data-key="${ci}:${at}"]`, list) : null;
     const prev = next ? null : ws[ws.length - 1];
     const ref = next ?? prev ?? ws[0];
     const y = next ? next.offsetTop : prev ? prev.offsetTop + prev.offsetHeight : 6;
     Object.assign(line.style, {
       top: y - 2 + 'px',
-      left: (ref ? ref.offsetLeft : 6) + 8 + 'px',
-      width: (ref ? ref.offsetWidth : list.clientWidth - 12) - 16 + 'px',
+      left: (ref ? ref.offsetLeft : 6) + 8 + indent + 'px',
+      width: (ref ? ref.offsetWidth : list.clientWidth - 12) - 16 - indent + 'px',
     });
     if (line.parentNode !== list) list.append(line);
   }
@@ -1801,21 +1923,28 @@
     const lists = [...smeCard.children].filter((l) => l.classList.contains('sme-list')).map((l, ci) => {
       const lr = l.getBoundingClientRect();
       const ws = [], targets = [];
+      let x2 = null; // граница уровней у линии в конце группы: левее — 1-й уровень, правее — 2-й
       for (const x of l.querySelectorAll(':scope > .sme-w')) {
-        if (block.includes(x)) continue;
+        if (block.includes(x) || x.classList.contains('is-folded')) continue;
         const xr = x.getBoundingClientRect();
+        x2 ??= xr.left + 40 * scale;
         const head = x.dataset.key === 'head';
         const it = head ? null : ed.draft.cols[ci][+x.dataset.key.split(':')[1]];
         if (!head) ws.push({ at: +x.dataset.key.split(':')[1], mid: xr.top + xr.height / 2 });
         if (head || (it.level !== 2 && !it.pinned)) targets.push({ key: x.dataset.key, top: xr.top, bottom: xr.bottom });
       }
-      return { left: lr.left, right: lr.right, ws, targets };
+      return { left: lr.left, right: lr.right, ws, targets, x2: x2 ?? lr.left + 40 * scale };
     });
     return { lists };
   }
   // Куда встанет виджет: колонка под курсором (или ближайшая); курсор над серединой пункта 1-го уровня — вложение в него,
-  // иначе место по курсору между виджетами
-  function dropAt({ lists }, x, y) {
+  // иначе место по курсору между виджетами. Линия сразу после последнего вложенного пункта группы: курсор правее начала
+  // текста вложенных — виджет встаёт в конец группы (2-й уровень), левее — выносится на 1-й уровень
+  function dropAt({ lists, fc, fi, kids, newCol }, x, y) {
+    if (newCol) {
+      const side = x < lists[0].left ? 'left' : x > lists[0].right ? 'right' : null;
+      if (side && newCol[side]) return { newcol: side };
+    }
     const dist = (l) => (x < l.left ? l.left - x : x > l.right ? x - l.right : 0);
     const ci = lists.indexOf(lists.reduce((a, b) => (dist(b) < dist(a) ? b : a)));
     const l = lists[ci];
@@ -1824,36 +1953,55 @@
       if (t) return { ci, nest: t.key };
     }
     const next = l.ws.find((s) => y < s.mid);
-    return { ci, at: next ? next.at : ed.draft.cols[ci].length };
+    const at = next ? next.at : ed.draft.cols[ci].length;
+    const col = ed.draft.cols[ci];
+    const inBlock = (i) => ci === fc && i >= fi && i <= fi + kids;
+    let p = at - 1, n = at;
+    while (p >= 0 && inBlock(p)) p--;
+    while (n < col.length && inBlock(n)) n++;
+    const prev = col[p], after = col[n];
+    if (prev?.level === 2 && !prev.pinned && !(after?.level === 2 && !after.pinned)) return { ci, at, level: x >= l.x2 ? 2 : 1 };
+    return { ci, at };
   }
   // step — «Вверх / Вниз» из меню «⋯»: один виджет на соседнее место, уровень не меняется
-  function moveWidget(key, { ci, at, nest }, step = false) {
+  function moveWidget(key, { ci, at, nest, level, newcol }, step = false) {
     const [fc, fi] = key.split(':').map(Number);
     const kids = step ? 0 : kidsOf(ed.draft.cols[fc], fi);
-    if (!nest && fc === ci && (at === fi || at === fi + kids + 1)) { renderEditor(); return; } // на своё же место
+    if (newcol) {
+      const draft = cloneDraft(ed.draft);
+      const block = draft.cols[fc].splice(fi, kids + 1);
+      const k = addColumnWith(draft, newcol, block);
+      commit(draft);
+      ed.selected = k;
+      renderEditor();
+      return;
+    }
+    const own = ed.draft.cols[fc][fi].level === 2 ? 2 : 1;
+    if (!nest && fc === ci && (at === fi || at === fi + kids + 1) && (!level || level === own)) { renderEditor(); return; } // на своё же место
     const draft = cloneDraft(ed.draft);
     let block = draft.cols[fc].splice(fi, kids + 1);
     const col = draft.cols[ci];
     const toSub = () => { block = block.map((x) => (x.level === 2 ? x : { ...x, level: 2 })); };
     let to;
     if (nest) {
-      // в конец вложенных пункта (у заголовка — вложенные в начале первой колонки)
+      // первым среди вложенных пункта — сразу под ним (у заголовка — в начало первой колонки)
       const ti = nest === 'head' ? -1 : +nest.split(':')[1];
+      ed.folded.delete(nest === 'head' ? 'head' : col[fc === ci && ti > fi ? ti - kids - 1 : ti]); // свёрнутый — раскрывается, виджет виден
       to = (fc === ci && ti > fi ? ti - kids - 1 : ti) + 1;
-      while (col[to]?.level === 2 && !col[to].pinned) to++;
       toSub();
     } else {
       to = fc === ci && fi < at ? at - kids - 1 : at;
       // закреплённые внизу остаются последними
       const pin = col.findIndex((x) => x.pinned);
       if (pin >= 0 && !block[0].pinned) to = Math.min(to, pin);
-      if (step) { /* уровень прежний */ } else if (col[to]?.level === 2) toSub();
+      if (step) { /* уровень прежний */ } else if (level === 2 || (!level && col[to]?.level === 2)) toSub();
       else if (block[0].level === 2) block[0] = { ...block[0], level: 1 };
     }
     col.splice(to, 0, ...block);
     let c = ci;
     if (fc > 0 && !draft.cols[fc].length) { draft.cols.splice(fc, 1); if (ci > fc) c--; } // вторая колонка без виджетов пропадает
     if (draftKey(draft) === draftKey(ed.draft)) { renderEditor(); return; }
+    ed.folded.delete(block[0]); // перенесённая группа — раскрыта
     commit(draft);
     ed.selected = `${c}:${to}`;
     renderEditor();
@@ -2449,8 +2597,9 @@
   const smePlus = $('.sme-plus', editor);
   const accPlus = $('.acc-plus');
   let plusOwner = smePlus; // кнопка, открывшая меню: «+» редактора, плюс у виджета или «+» шапки аккордеона
-  let plusAt = null; // плюс у виджета или пустая колонка: куда встанет страница — { col, at }
+  let plusAt = null; // плюс у виджета или пустая колонка: куда встанет страница — { col, at, level }
   let plusReplace = null; // «Заменить» в тулбаре: ключ виджета, на место которого встанет страница
+  let plusNewCol = null; // плюс на краю карточки (реестр): 'left' / 'right' — страница встанет в новую колонку
 
   function renderPlusMenu() {
     const q = plusSearch.value.trim().toLowerCase();
@@ -2470,13 +2619,8 @@
       if (onClick) r.addEventListener('click', onClick);
       plusList.append(r);
     };
-    // У «+» шапки аккордеона строк «Добавить виджет» и «Добавить колонку» нет. Реестр двухколоночный:
-    // «Добавить колонку» — пока колонка одна (вторая без виджетов при удалении последнего пропадает).
+    // Строки «Добавить колонку» нет: колонку добавляют плюсами по краям карточки и перетаскиванием за её край.
     // «Добавить виджет» пока скрыт: row('', '<span class="ico pm-ico">&#xEADD;</span><span>Добавить виджет</span>');
-    if (!q && fromEditor && !plusReplace && itemSettingsOn() && ed.draft.cols.length < 2) {
-      row('', '<span class="ico24 pm-ico pm-ico--col">&#xEAEE;</span><span>Добавить колонку</span>', addColumn);
-      plusList.append(el('div', 'pm-sep')); // отделяет команды от страниц, как группы между собой
-    }
     for (const n of PLUS_TREE) {
       if (n.sep) { if (!q) plusList.append(el('div', 'pm-sep')); continue; }
       const kids = pages(n).filter(match);
@@ -2494,7 +2638,10 @@
   function addPage(title) {
     const draft = cloneDraft(ed.draft);
     let key;
-    if (plusAt) { draft.cols[plusAt.col].splice(plusAt.at, 0, sub(title)); key = `${plusAt.col}:${plusAt.at}`; } // плюс у виджета или пустая колонка
+    // плюс на краю карточки (реестр) — страница первой в новой колонке
+    if (plusNewCol) key = addColumnWith(draft, plusNewCol, [sub(title)]);
+    // плюс у виджета или пустая колонка; виджет — на уровне того, у чьего плюса добавили (у вложенного — тоже вложенный)
+    else if (plusAt) { draft.cols[plusAt.col].splice(plusAt.at, 0, sub(title, plusAt.level)); key = `${plusAt.col}:${plusAt.at}`; }
     else {
       // новый пункт — в конец первой колонки, но над закреплёнными внизу
       const pinned = draft.cols[0].findIndex((it) => it.pinned);
@@ -2505,14 +2652,6 @@
     closePlusMenu();
     commit(draft);
     if (itemSettingsOn()) select(key); // добавленный пункт — выделен
-  }
-
-  // «Добавить колонку» — пустая колонка справа
-  function addColumn() {
-    const draft = cloneDraft(ed.draft);
-    draft.cols.push([]);
-    closePlusMenu();
-    commit(draft);
   }
 
   // «Общее демо»: страница из меню «+» шапки аккордеона становится пунктом в конце аккордеона
@@ -2849,49 +2988,102 @@
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); stopAeEdit(false); }
   });
 
-  // Перетаскивание: нажатие на пункт и сдвиг больше 4px — пункт едет за курсором по вертикали, остальные расступаются;
-  // отпускание ставит его на новое место. Без сдвига — клик: выделение.
-  function aeDrag(e, w) {
-    const ws = [...aeList.children];
-    const from = ws.indexOf(w);
-    const tops = ws.map((x) => x.offsetTop);
-    const step = ws.length > 1 ? tops[1] - tops[0] : w.offsetHeight;
-    const y0 = e.clientY;
-    let to = from, dragging = false;
+  // Перетаскивание — как в редакторе подменю: нажатие выделяет пункт; сдвиг больше 4px — пункт остаётся на месте бледным (40%),
+  // за курсором (правее и ниже) едет его копия (75%), остальные стоят на месте; место вставки — линия между пунктами
+  // (@info_border-color 60%, 4px, 8px от краёв пункта; где пункт и так стоит — линии нет). Отпускание ставит пункт туда
+  // одним шагом отмены, пункт остаётся выделен. Закреплённый внизу не перетаскивается, другие под него не встают.
+  // Вложение — «бросить пункт в пункт»: курсор над серединой другого пункта — тот обводится пунктиром, линии нет; отпускание
+  // переносит пункт со всем его подменю в подменю того (aeNest): из аккордеона он уходит.
+  // В закреплённый внизу вложить нельзя. Применяется, как и остальное, по «Сохранить»; выделен — пункт, в который вложили.
+  function aeDrag(e, id) {
+    const x0 = e.clientX, y0 = e.clientY;
+    const from = ae.draft.findIndex((it) => it.id === id);
+    if (ae.draft[from].pinned) return;
+    const pin = ae.draft.findIndex((it) => it.pinned);
+    const last = pin < 0 ? ae.draft.length : pin; // дальше закреплённого не ставим
+    let w = null, copy = null, line = null, mids = null, at = from, nest = null;
     const move = (ev) => {
-      const dy = (ev.clientY - y0) / scale;
-      if (!dragging) {
-        if (Math.abs(dy) < 4) return;
-        dragging = true;
+      if (!w) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) / scale < 4) return;
+        w = $(`.ae-w[data-id="${id}"]`, aeList);
+        if (!w) return;
+        // середины остальных пунктов на начало перетаскивания: по ним — место вставки
+        mids = [...aeList.children].map((x, i) => { const r = x.getBoundingClientRect(); return { i, x, top: r.top, bottom: r.bottom, mid: r.top + r.height / 2 }; })
+          .filter(({ i }) => i !== from && i < last);
         aeList.classList.add('is-dragging');
-        w.classList.add('is-dragged');
+        w.classList.add('is-ghost');
+        copy = w.cloneNode(true);
+        for (const n of copy.querySelectorAll('.sme-tb, .sme-mk')) n.remove();
+        copy.className = 'sme-w ae-w sme-w--copy';
+        copy.style.width = w.offsetWidth + 'px';
+        line = el('div', 'sme-drop');
+        aeList.append(copy);
+        document.body.classList.add('is-sme-dragging');
       }
-      const d = Math.max(tops[0] - tops[from], Math.min(tops[ws.length - 1] - tops[from], dy));
-      w.style.transform = `translateY(${d}px)`;
-      to = Math.max(0, Math.min(ws.length - 1, Math.round((tops[from] + d - tops[0]) / step)));
-      ws.forEach((x, i) => {
-        if (i === from) return;
-        const shift = from < i && i <= to ? -step : to <= i && i < from ? step : 0;
-        x.style.transform = shift ? `translateY(${shift}px)` : '';
+      const c = aeList.getBoundingClientRect();
+      copy.style.left = (ev.clientX - c.left) / scale + 12 + 'px';
+      copy.style.top = (ev.clientY - c.top) / scale + 8 + 'px';
+      // середина пункта (половина высоты) — вложение в него
+      const lr = aeList.getBoundingClientRect();
+      const inside = ev.clientX >= lr.left && ev.clientX <= lr.right;
+      const t = inside && mids.find((m) => { const q = (m.bottom - m.top) / 4; return ev.clientY > m.top + q && ev.clientY < m.bottom - q; });
+      nest = t ? ae.draft[t.i].id : null;
+      for (const m of mids) m.x.classList.toggle('is-nest-target', !!t && m === t);
+      if (nest) { line.remove(); return; }
+      at = mids.find((m) => ev.clientY < m.mid)?.i ?? last;
+      if (at === from || at === from + 1) { line.remove(); return; }
+      // линия — над пунктом, перед которым встанет; в конце (над закреплённым или внизу) — под последним
+      const ws = [...aeList.querySelectorAll(':scope > .ae-w:not(.sme-w--copy)')];
+      const next = at < last ? ws[at] : null;
+      const prev = next ? null : ws[last - 1];
+      Object.assign(line.style, {
+        top: (next ? next.offsetTop : prev.offsetTop + prev.offsetHeight) - 2 + 'px',
+        left: w.offsetLeft + 8 + 'px',
+        width: w.offsetWidth - 16 + 'px',
       });
+      if (!line.parentNode) aeList.append(line);
     };
     const up = () => {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
-      if (!dragging) {
-        aeSelect(w.dataset.id);
-        return;
-      }
+      if (!w) return;
+      copy.remove();
+      line.remove();
+      document.body.classList.remove('is-sme-dragging');
       aeList.classList.remove('is-dragging');
+      w.classList.remove('is-ghost');
+      for (const m of mids) m.x.classList.remove('is-nest-target');
+      if (nest) { aeNest(id, nest); return; }
+      if (at === from || at === from + 1) return;
       const draft = ae.draft.slice();
-      draft.splice(to, 0, ...draft.splice(from, 1));
-      // закреплённый пункт всегда последний: перетаскивание его не сдвигает и других под него не ставит
-      const p = draft.findIndex((it) => it.pinned);
-      if (p >= 0) draft.push(...draft.splice(p, 1));
-      aeCommit(draft, w.dataset.id);
+      const [it] = draft.splice(from, 1);
+      draft.splice(at > from ? at - 1 : at, 0, it);
+      aeCommit(draft, id);
     };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
+  }
+
+  // Пункт id уходит из черновика аккордеона в подменю пункта to (черновик его подменю — в it.sub, как после «Настроить подменю»).
+  // Раздел встаёт первым пунктом подменю (под заголовком и его вложенными), его подменю — вложенными под ним (2-й уровень):
+  // заголовок подменю — первым вложенным, если подпись отличается от названия раздела; колонки — подряд; вложенность глубже
+  // становится 2-м уровнем (больше двух уровней не бывает), закрепление снимается.
+  function aeNest(id, to) {
+    const child = ae.draft.find((it) => it.id === id);
+    const cd = child.sub ?? subDraftOf(ALL_SECTIONS[id]);
+    const kids = [
+      ...(cd.showHead && cd.head != null && cd.head !== child.title ? [sub(cd.head)] : []),
+      ...cd.cols.flat().map(({ pinned, ...x }) => ({ ...x, level: 2 })),
+    ];
+    const draft = ae.draft.filter((it) => it !== child).map((it) => {
+      if (it.id !== to) return it;
+      const sd = it.sub ?? subDraftOf(ALL_SECTIONS[to]);
+      const cols = sd.cols.map((c) => c.slice());
+      const at = sd.showHead && sd.head != null ? headKids(cols[0]) : 0;
+      cols[0].splice(at, 0, sub(child.title), ...kids);
+      return { ...it, sub: { ...sd, cols } };
+    });
+    aeCommit(draft, to);
   }
 
   accEditor.addEventListener('mousedown', (e) => {
@@ -2915,8 +3107,9 @@
       openIconPick(anchor, ae.draft.find((it) => it.id === id).icon, (ic) => aeCommit(ae.draft.map((it) => (it.id === id ? { ...it, icon: ic } : it)), id));
       return;
     }
-    e.preventDefault();
-    aeDrag(e, w);
+    e.preventDefault(); // без выделения текста при протяжке
+    aeSelect(id);
+    aeDrag(e, id);
   });
   aeList.addEventListener('click', (e) => {
     const m = e.target.closest('.sme-mk');
@@ -3247,7 +3440,15 @@
     const key = plusReplace;
     const draft = cloneDraft(ed.draft);
     if (key === 'head') draft.head = title;
-    else {
+    else if (key.startsWith('col:')) {
+      // пустая колонка — страница встаёт в неё и выделяется
+      const c = +key.slice(4);
+      draft.cols[c] = [sub(title)];
+      closePlusMenu();
+      commit(draft);
+      select(`${c}:0`);
+      return;
+    } else {
       const [c, i] = key.split(':').map(Number);
       const it = draft.cols[c][i];
       draft.cols[c][i] = { ...sub(title, it.level), ...(it.pinned && { pinned: true }) };
@@ -3280,11 +3481,12 @@
       if (w && acc) owner = $(`.ae-w[data-id="${w.dataset.id}"] > .${m}`, aeList);
       else if (w) owner = $(`.sme-w[data-key="${w.dataset.key}"] > .${m}`, smeCard);
       else if (li >= 0) owner = smeCard.children[li];
-      else if (replace) owner = $('.sme-w.is-selected .sme-tb__btn--replace', smeCard);
+      else if (replace) owner = $('.is-selected .sme-tb__btn--replace', smeCard);
     }
     if (owner !== accPlus) stopTitleEdit(true);
     plusOwner = owner;
-    plusAt = owner.dataset.at == null ? null : { col: +owner.dataset.col, at: +owner.dataset.at };
+    plusAt = owner.dataset.at == null ? null : { col: +owner.dataset.col, at: +owner.dataset.at, level: +(owner.dataset.level ?? 1) };
+    plusNewCol = owner.dataset.newcol ?? null;
     plusReplace = replace;
     plusSearch.value = '';
     // каждое открытие — исходный вид: раскрыты «Моей компании» и «Отчетность»
@@ -3308,7 +3510,7 @@
   accPlus.addEventListener('click', () => (plusMenu.hidden ? openPlusMenu(accPlus) : closePlusMenu()));
   smeCard.addEventListener('click', (e) => {
     const m = e.target.closest('.sme-mk') ?? (e.target.closest('.sme-empty__btn') && e.target.closest('.sme-list.is-empty'));
-    if (!m || m.dataset.at == null) return; // вне реестра плюсы пока ничего не добавляют
+    if (!m || (m.dataset.at == null && !m.dataset.newcol)) return; // вне реестра плюсы пока ничего не добавляют
     const again = !plusMenu.hidden && plusOwner === m;
     if (!plusMenu.hidden) closePlusMenu();
     if (!again) openPlusMenu(m);
