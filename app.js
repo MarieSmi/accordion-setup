@@ -1341,6 +1341,10 @@
   const edgeColLine = () => editorExperiment() && stage.dataset.variant === 'line';
   const runtimePreview = $('#runtimePreview');
   function openEditorOnly() {
+    // копия второго варианта «Добавления колонок» — только в нём: при переходе в другой сценарий с редактором её убираем
+    expGhost?.remove();
+    expGhost = null;
+    if (editorExperiment() && !stage.dataset.variant) stage.dataset.variant = 'plus';
     openEditor('docs');
     if (editorFromScratch()) {
       Object.assign(ed.draft, { showHead: true, cols: [[]] });
@@ -1368,7 +1372,7 @@
   // живой стоит под подписью своего варианта, на месте второго — его неживая копия (expGhost). Курсор на копии — редакторы
   // меняются: черновик и история каждого варианта сохраняются (expSaved), ✓ / ✕ возвращает к 5 пунктам только активный.
   var expSaved = {};
-  let expBase = null, expGhost = null;
+  var expBase = null, expGhost = null;
   const expOther = (v) => (v === 'line' ? 'plus' : 'line');
   const expInitial = () => ({ draft: cloneDraft(expBase), hist: [cloneDraft(expBase)], at: 0, folded: new Set() });
   function placeExp(node, v) {
@@ -1642,6 +1646,7 @@
   // Пока открыто окно настроек пункта — из черновика с его правками.
   const runtimeAcc = $('#runtimeAcc');
   function renderRuntime(draft = ed.draft) {
+    if (editorExperiment()) { renderExpRuntime(stage.dataset.variant, draft); return; }
     const { sec } = ed;
     const view = { ...sec, title: draft.title, customIcon: draft.icon,
       submenu: { ...sec.submenu, head: draft.head ?? sec.submenu.head, headRight: draft.headRight ?? undefined, cols: draft.cols } };
@@ -1653,6 +1658,36 @@
     runtimeAcc.replaceChildren(el('ul', 'acc-list', ''));
     runtimeAcc.firstChild.append(li);
 
+    const { box, count } = runtimeSubmenu(draft);
+    // подменю из одного пункта (или пустого) нет — блок «Рантайм — подменю» пропадает
+    const kind = runtimePreview.closest('.kind');
+    kind.hidden = count < 2;
+    $('#runtimeNote').hidden = count !== 1; // один пункт — бледная подсказка под пунктом аккордеона
+    if (kind.hidden) { runtimePreview.replaceChildren(); return; }
+    runtimePreview.replaceChildren(box);
+    if (draft.cols.length > 1) fitMultiHead(box); // заголовок многоколоночного — по ширине первой колонки, как в аккордеоне
+  }
+
+  // «Добавление колонок»: рантайм подменю — под редактором своего варианта (в 40 под окном), с каждой правкой.
+  // Под копией неактивного варианта — его рантайм на момент переключения.
+  function renderExpRuntime(v, draft) {
+    const rt = $(`#editorPair .kind[data-v="${v}"] .exp-rt`);
+    if (!rt) return;
+    const { box, count } = runtimeSubmenu(draft);
+    rt.hidden = count < 2;
+    const preview = $('.exp-rt__preview', rt);
+    if (rt.hidden) { preview.replaceChildren(); return; }
+    preview.replaceChildren(box);
+    if (draft.cols.length > 1) fitMultiHead(box);
+    rt.style.marginTop = '0px';
+    rt.style.marginTop = Math.max(0, editor.offsetTop + editor.offsetHeight + 40 - rt.offsetTop) + 'px';
+  }
+
+  // подменю рантайма из черновика (широкое, как по клику в аккордеоне); count — сколько в нём пунктов с заголовком
+  function runtimeSubmenu(draft) {
+    const { sec } = ed;
+    const view = { ...sec, title: draft.title, customIcon: draft.icon,
+      submenu: { ...sec.submenu, head: draft.head ?? sec.submenu.head, headRight: draft.headRight ?? undefined, cols: draft.cols } };
     const box = el('div', 'submenu submenu--wide' + (draft.cols.length > 1 ? ' submenu--multi' : ''));
     const panel = el('div', 'submenu__panel');
     if (draft.head == null) panel.append(el('div', 'submenu__head', `<div class="sm-head">${headIconHTML(sec)}${headTitleHTML(sec, sec.submenu.head || draft.title)}</div>`));
@@ -1665,14 +1700,7 @@
     }
     panel.append(cols);
     box.append(panel);
-    // подменю из одного пункта (или пустого) нет — блок «Рантайм — подменю» пропадает
-    const kind = runtimePreview.closest('.kind');
-    const count = panel.querySelectorAll('button.sm-head, .sm-item').length;
-    kind.hidden = count < 2;
-    $('#runtimeNote').hidden = count !== 1; // один пункт — бледная подсказка под пунктом аккордеона
-    if (kind.hidden) { runtimePreview.replaceChildren(); return; }
-    runtimePreview.replaceChildren(box);
-    if (draft.cols.length > 1) fitMultiHead(box); // заголовок многоколоночного — по ширине первой колонки, как в аккордеоне
+    return { box, count: panel.querySelectorAll('button.sm-head, .sm-item').length };
   }
 
   // Изменение черновика — новый шаг истории (шаги «вперёд» отбрасываются).
