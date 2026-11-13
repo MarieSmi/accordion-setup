@@ -977,6 +977,7 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .editor-only__design { padding-left: 40px; }
 /* «Добавление колонок»: два варианта по половинам сцены, подпись и редактор под ней — в 200 от левого края половины */
 .editor-pair > .kind { padding-left: 200px; }
+.exp-rt__preview .submenu { width: max-content; } /* рантайм подменю — по содержимому, а не на всю половину сцены */
 /* неживая копия редактора на месте неактивного варианта: курсор на ней делает её живой (app.js) */
 .sme-ghost .sme-tb, .sme-ghost [data-tip]::after { display: none; }
 /* пустое представление (Figma 9eLwMJLQCwT0xHKviN2j1P 18578:20785): бледная подложка, по центру кнопка 32 с «+» в квадрате —
