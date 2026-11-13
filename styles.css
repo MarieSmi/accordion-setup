@@ -1193,6 +1193,9 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
   cursor: text; outline: none; transition: color .12s;
 }
 .sme-title:hover { color: #575757; }
+/* пункт пользователя: без фото в шапке, имя — просто текст (без ховера и правки) */
+.sm-editor.is-user .sme-icon { display: none; }
+.sm-editor.is-user .sme-title { cursor: default; color: var(--text); }
 /* правка названия (Figma butxp53vLxrXFluHM61BfU 17493:35508): текст hover_text-color, под ним линия unaccented_hover_border-color */
 .sme-title.is-editing { color: #575757; background: linear-gradient(#8f99a3, #8f99a3) bottom / 100% 1px no-repeat; text-overflow: clip; user-select: text; caret-color: var(--text); }
 .sme-plus {

@@ -1557,6 +1557,8 @@
     if (iw && iw.key !== selected) closeItemWin(); // окно настроек — только у выделенного виджета
     if (!smeTitle.classList.contains('is-editing')) smeTitle.textContent = draft.title;
     smeIcon.innerHTML = editorIconHTML(ed.sec, draft.icon);
+    // пункт пользователя (с фото): в шапке окна без фото, имя не редактируется
+    editor.classList.toggle('is-user', !!ed.sec.photo);
     smeCard.innerHTML = '';
     smeCard.classList.toggle('is-multi', draft.cols.length > 1);
     // правки реестра (двухколоночный, плюсы с меню «+», ховер только у виджета) — там же, где окно настроек пункта
@@ -1780,7 +1782,7 @@
   // Название раздела: клик — правка на месте; Enter или уход фокуса — применить, Esc — отменить.
   // Каретка встаёт туда, куда кликнули (мимо текста — в конец), текст не выделяется.
   function startTitleEdit(e) {
-    if (smeTitle.classList.contains('is-editing')) return;
+    if (smeTitle.classList.contains('is-editing') || ed.sec.photo) return; // имя пользователя не редактируется
     ed.selected = null;
     renderEditor();
     smeTitle.classList.add('is-editing');
