@@ -153,6 +153,8 @@
     // disabled — сценарий пока не сделан
     scenarios: [
       { id: 'demo', title: 'Общее демо' },
+      // «Добавление колонок» — на одном экране два редактора подменю из 5 пунктов: плюсы по краям карточки, как в «Общем демо», и тонкая линия с точкой у края
+      { id: 'experiment', title: 'Добавление колонок' },
       // «Редактор» — вилка: scratch — редактор без пунктов, ready — готовое «Документы»
       { group: 'Подменю', items: [
         { id: 'submenu-kinds', title: 'Виды подменю и пунктов' },
@@ -203,6 +205,7 @@
       removeAddedSections(); // пункты, добавленные «+» шапки аккордеона, живут только в своём сценарии
       resetHistory(); // смена сценария — не правка: история начинается заново
       smeConfirm.hidden = true;
+      expSaved = {}; // «Добавление колонок» начинается с исходных 5 пунктов в обоих вариантах
       setEditorOnly();
     },
   });
@@ -1318,6 +1321,8 @@
     itemEdit = null;
     smeConfirm.hidden = true;
     editor.hidden = true;
+    expGhost?.remove();
+    expGhost = null;
     shield.hidden = !ae; // редактор аккордеона под ним остаётся открытым
     stage.classList.remove('is-ae-sub');
     const aeItemId = ed?.sec.id;
@@ -1329,8 +1334,11 @@
   // Группа «Редактор подменю»: на сцене только редактор «Документов» по центру; после ✓/✕ он открывается снова.
   // «С нуля» — тот же редактор, где есть только заголовок «Документы» (подменю из одного пункта в рантайме не показывается);
   // удалить и его — на белой карточке заглушка «+» (открывает меню «+»). Его ✓ не трогает «Документы» в аккордеоне. «Готовое подменю» — подменю как есть.
-  const editorOnly = () => stage.dataset.scenario === 'submenu-editor';
-  const editorFromScratch = () => editorOnly() && stage.dataset.variant === 'scratch';
+  // «Добавление колонок» — тот же редактор: заголовок «Документы» и 5 пунктов, ✓ аккордеон не трогает; «Линия у края» — новая колонка линией с точкой у края карточки
+  const editorOnly = () => ['submenu-editor', 'experiment'].includes(stage.dataset.scenario);
+  const editorFromScratch = () => stage.dataset.scenario === 'submenu-editor' && stage.dataset.variant === 'scratch';
+  const editorExperiment = () => stage.dataset.scenario === 'experiment';
+  const edgeColLine = () => editorExperiment() && stage.dataset.variant === 'line';
   const runtimePreview = $('#runtimePreview');
   function openEditorOnly() {
     openEditor('docs');
@@ -1339,11 +1347,73 @@
       ed.hist = [cloneDraft(ed.draft)];
       ed.base = cloneDraft(ed.draft);
       renderEditor();
+    } else if (editorExperiment()) {
+      if (!stage.dataset.variant) stage.dataset.variant = 'plus';
+      Object.assign(ed.draft, { showHead: true, cols: [ed.draft.cols[0].slice(0, 5)] });
+      expBase = cloneDraft(ed.draft);
+      ed.hist = [cloneDraft(ed.draft)];
+      ed.base = cloneDraft(ed.draft);
+      renderEditor();
+      placeExp(editor, stage.dataset.variant);
+      renderExpGhost();
+      return;
     }
     // редактор — в правой половине, под подписью «Дизайнтайм»
     const design = $('.editor-only__design');
     editor.style.left = $('.kind__label', design).offsetLeft + 'px'; // левый край окна — по подписи «Дизайнтайм»
     editor.style.top = design.offsetTop + 32 + 'px';
+  }
+
+  // «Добавление колонок»: два варианта рядом — plus (как в «Общем демо») и line (линия у края). Редактор на сцене один:
+  // живой стоит под подписью своего варианта, на месте второго — его неживая копия (expGhost). Курсор на копии — редакторы
+  // меняются: черновик и история каждого варианта сохраняются (expSaved), ✓ / ✕ возвращает к 5 пунктам только активный.
+  var expSaved = {};
+  let expBase = null, expGhost = null;
+  const expOther = (v) => (v === 'line' ? 'plus' : 'line');
+  const expInitial = () => ({ draft: cloneDraft(expBase), hist: [cloneDraft(expBase)], at: 0, folded: new Set() });
+  function placeExp(node, v) {
+    const slot = $(`#editorPair .kind[data-v="${v}"]`);
+    node.style.left = $('.kind__label', slot).offsetLeft + 'px';
+    node.style.top = slot.offsetTop + 32 + 'px';
+  }
+  // ставит в ed состояние варианта v (вид редактора зависит от data-variant) и перерисовывает
+  function expLoad(v, st) {
+    Object.assign(ed, { draft: cloneDraft(st.draft), hist: st.hist, at: st.at, folded: st.folded, selected: null });
+    stage.dataset.variant = v;
+    renderEditor();
+  }
+  const expState = () => ({ draft: cloneDraft(ed.draft), hist: ed.hist, at: ed.at, folded: ed.folded });
+  function renderExpGhost() {
+    expGhost?.remove();
+    expGhost = null;
+    if (!editorExperiment() || !ed) return;
+    const cur = stage.dataset.variant, other = expOther(cur), keep = expState();
+    expLoad(other, expSaved[other] ?? expInitial());
+    const g = editor.cloneNode(true);
+    expLoad(cur, keep);
+    g.removeAttribute('id');
+    g.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+    g.classList.add('sme-ghost');
+    g.setAttribute('aria-hidden', 'true');
+    placeExp(g, other);
+    // не во время перетаскивания — оно идёт в живом редакторе
+    g.addEventListener('mouseenter', (e) => { if (!e.buttons) expSwitch(other); });
+    editor.after(g);
+    expGhost = g;
+  }
+  function expSwitch(v) {
+    if (!ed || !editorExperiment() || stage.dataset.variant === v) return;
+    if (itemEdit) stopItemEdit(true);
+    stopTitleEdit(true);
+    closeSmeMore();
+    closeItemWin();
+    closeIconPick();
+    closePlusMenu();
+    smeConfirm.hidden = true;
+    expSaved[stage.dataset.variant] = expState();
+    expLoad(v, expSaved[v] ?? expInitial());
+    placeExp(editor, v);
+    renderExpGhost();
   }
   function setEditorOnly() {
     if (editorOnly()) openEditorOnly();
@@ -1552,19 +1622,19 @@
     // при наведении карточка обводится рамкой, но не выделяется
     const sides = !selected && smeCard.querySelector('.sme-w') ? newColSides() : null;
     smeCard.classList.toggle('has-col-mk', !!sides);
-    smeCard.classList.toggle('is-edge-col', editorFromScratch()); // «С нуля»: вместо рамки карточки — линия с плюсом у края, по наведению на край
+    smeCard.classList.toggle('is-edge-col', edgeColLine()); // «Добавление колонок → Линия у края»: вместо рамки карточки — линия с плюсом у края, по наведению на край
     if (sides) for (const side of ['left', 'right']) {
       if (!sides[side]) continue;
       const m = el('span', `sme-mk sme-mk--col sme-mk--col-${side}`);
       m.dataset.newcol = side;
       m.dataset.tip = 'Добавить колонку';
-      if (editorFromScratch()) m.append(el('span', 'sme-mk__dot')); // «С нуля»: точка по центру линии — плюсом только при наведении на неё
+      if (edgeColLine()) m.append(el('span', 'sme-mk__dot')); // «Линия у края»: точка по центру линии — плюсом только при наведении на неё
       smeCard.append(m);
     }
     smeUndo.disabled = ed.at === 0;
     smeRedo.disabled = ed.at === ed.hist.length - 1;
     smeReset.disabled = draftKey(draft) === draftKey(ed.base);
-    if (stage.dataset.scenario === 'submenu-editor') renderRuntime();
+    if (editorOnly()) renderRuntime();
   }
 
   // Слева от редактора в группе «Редактор подменю» — рантайм из черновика, обновляется с каждой правкой:
@@ -1647,7 +1717,7 @@
 
   // Применение черновика: аккордеон и подменю раздела перерисовываются с новым названием и списком.
   function saveEditor() {
-    if (editorFromScratch()) { closeEditor(); return; }
+    if (editorFromScratch() || editorExperiment()) { closeEditor(); return; }
     const { sec, draft } = ed;
     // Открыт из редактора аккордеона: одним шагом в его черновик, применится (или отменится) вместе с ним
     if (ae) {
@@ -3166,7 +3236,7 @@
   const IW_SHOWS = [['both', 'Новые и общие события'], ['new', 'Только новые события'], ['total', 'Общее количество событий']];
   const IW_DEMO = { accent: '3', count: '12' }; // демо-цифры счётчика, если своих у пункта нет
   // окно — в «Общем демо» и в «Подменю → Редактор»
-  function itemSettingsOn() { return ['demo', 'submenu-editor'].includes(stage.dataset.scenario); }
+  function itemSettingsOn() { return ['demo', 'submenu-editor', 'experiment'].includes(stage.dataset.scenario); }
 
   // Элемент справа пункта ⇄ настройки окна
   function iwFromRight(r) {
@@ -3294,7 +3364,7 @@
     $('.sm-right', w)?.remove();
     const right = iwRight();
     if (right) $('.sme-w__text', w).insertAdjacentHTML('afterend', rightHTML(right));
-    if (stage.dataset.scenario === 'submenu-editor') renderRuntime(iwDraft().draft);
+    if (editorOnly()) renderRuntime(iwDraft().draft);
   }
   function iwSet(patch) { Object.assign(iw, patch); renderItemWin(); }
 

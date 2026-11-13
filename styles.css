@@ -199,6 +199,8 @@ ul { list-style: none; margin: 0; padding: 0; }
 .acc-plus .ico { color: var(--acc-plus); }
 .acc-plus:hover, .acc-plus.is-active { background: var(--acc-plus-hover-bg); }
 .acc-plus:hover .ico, .acc-plus.is-active .ico { color: var(--acc-plus-hover); }
+/* в режиме чтения плюса в шапке аккордеона нет — он только в редакторе аккордеона (#aePlus); место в строке остаётся, шапка не прыгает */
+#accordion .acc-plus { visibility: hidden; pointer-events: none; }
 
 .acc-group { display: flex; align-items: center; gap: 10px; padding: 0 12px 0 14px; }
 .acc-burger { position: relative; padding: 6px; display: flex; border-radius: 50%; }
@@ -958,9 +960,10 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 /* сводная «Виды подменю и пунктов»: на всю сцену поверх всего, фон как у конструктора; подменю в потоке, без кликов */
 .kinds { display: none; position: absolute; inset: 0; z-index: 45; align-items: flex-start; gap: 48px; padding: 48px; background: var(--ctor-bg); }
 .stage[data-scenario="submenu-kinds"] #submenuKinds,
-.stage[data-scenario="submenu-editor"] #editorOnly { display: flex; }
+.stage[data-scenario="submenu-editor"] #editorOnly,
+.stage[data-scenario="experiment"] #editorPair { display: flex; }
 /* «Редактор подменю»: редактор и его всплывашки — поверх фона сценария */
-.stage[data-scenario="submenu-editor"] .sm-editor { z-index: 46; }
+.stage:is([data-scenario="submenu-editor"], [data-scenario="experiment"]) .sm-editor { z-index: 46; }
 /* слева рантайм, справа дизайнтайм (сам редактор лежит поверх, под подписью) — по обе стороны от середины сцены */
 .editor-only { padding-top: 120px; }
 .editor-only > * { flex: 1; }
@@ -972,6 +975,10 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 /* пункт аккордеона в рантайме — на полосе аккордеона шириной 220, как на сцене */
 .rt-acc { width: 220px; padding: 4px 0; border-radius: 8px; background: var(--acc-bg); color: var(--acc-text); font-weight: var(--acc-weight); -webkit-font-smoothing: antialiased; }
 .editor-only__design { padding-left: 40px; }
+/* «Добавление колонок»: два варианта по половинам сцены, подпись и редактор под ней — в 200 от левого края половины */
+.editor-pair > .kind { padding-left: 200px; }
+/* неживая копия редактора на месте неактивного варианта: курсор на ней делает её живой (app.js) */
+.sme-ghost .sme-tb, .sme-ghost [data-tip]::after { display: none; }
 /* пустое представление (Figma 9eLwMJLQCwT0xHKviN2j1P 18578:20785): бледная подложка, по центру кнопка 32 с «+» в квадрате —
    у пустой колонки реестра и у пустого подменю (заглушка на всю карточку) */
 .sme-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 24px; border-radius: 4px; background: rgba(218, 218, 218, .12); }
@@ -982,9 +989,9 @@ button.sm-head:hover .sm-head__title { background: var(--submenu-item-hover); }
 .sme-empty__btn:hover .ico24 { color: #313e78; } /* ховерится только иконка, не вся ячейка */
 .sme-stub { outline: none; }
 .sme-stub { height: 53px; min-width: 210px; } /* как карточка с одним виджетом (6 + 39 + 6 + рамки) — окно не прыгает по высоте */
-.stage[data-scenario="submenu-editor"] :is(.icon-pick, .item-win) { z-index: 47; }
-.stage[data-scenario="submenu-editor"] :is(.plus-menu, .iw-menu) { z-index: 48; } /* меню — поверх окна настроек пункта */
-.stage[data-scenario="submenu-editor"] .confirm-layer { z-index: 48; }
+.stage:is([data-scenario="submenu-editor"], [data-scenario="experiment"]) :is(.icon-pick, .item-win) { z-index: 47; }
+.stage:is([data-scenario="submenu-editor"], [data-scenario="experiment"]) :is(.plus-menu, .iw-menu) { z-index: 48; } /* меню — поверх окна настроек пункта */
+.stage:is([data-scenario="submenu-editor"], [data-scenario="experiment"]) .confirm-layer { z-index: 48; }
 /* «Настроить» — кнопка-ссылка label внизу аккордеона по центру, 8 от низа. В «Общем демо» появляется по долгому наведению на меню
    (курсор задержался на аккордеоне 0,5 с), уходит вместе с курсором; пока открыт редактор аккордеона — видна.
    Иконка 16 и отступ 4, текст 14; цвет — из макета: label #8991a9; по наведению цвет не меняется, текст подчёркивается.
@@ -1299,7 +1306,7 @@ body.is-sme-dragging, body.is-sme-dragging * { cursor: move !important; }
 .sme-drop--col { width: 4px; height: auto; top: 6px; bottom: 6px; }
 .sme-drop--left { left: -8px; }
 .sme-drop--right { right: -8px; }
-/* «Подменю → Редактор → С нуля»: карточка рамкой не обводится. У левого / правого края — зона по всей высоте списка;
+/* «Добавление колонок → Линия у края»: карточка рамкой не обводится. У левого / правого края — зона по всей высоте списка;
    курсор в ней — тонкая бледная линия (1px, как рамка ховера виджета) там же, где линия вставки, и плюс по её центру */
 .sme-card.is-edge-col.has-col-mk:is(:hover, :has(> .sme-mk--col.is-active)), .sme-card.is-edge-col.is-col-drop { box-shadow: none; }
 .sme-card.is-edge-col > .sme-mk--col {
